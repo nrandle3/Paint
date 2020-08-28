@@ -25,6 +25,15 @@ import javax.imageio.ImageIO;
  */
 public class Paint extends Application {
     
+    //Setting up Vars
+    private File file;
+    private Image image;
+    private ImageView imageView = new ImageView();
+    private BorderPane mainBPane;
+    
+    
+    
+    //File chooser stuff condensed
     public FileChooser filePickerSetup(){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Image File");
@@ -35,26 +44,48 @@ public class Paint extends Application {
         return fileChooser;
     }
     
-    //although I don't like public vars, this is the only way I could find to do
-    //a save function (as opposed to save as)
-    public File file;
+    private void imageSetup(File file){
+	image = new Image(file.toURI().toString());
+	
+	//Setting the image view 
+        imageView.setImage(image); 
+        
+        //Setting the position of the image 
+        imageView.setX(0); 
+        imageView.setY(0); 
+        //setting the fit height and width of the image view 
+        imageView.setFitHeight(image.getHeight()); 
+        imageView.setFitWidth(image.getWidth()); 
+        imageView.setPreserveRatio(true); 
+    }
+    
+    
+    
     
     @Override
     public void start(Stage stage) throws Exception {
         //main device for centering stuff
-        BorderPane mainBPane = new BorderPane();
+        mainBPane = new BorderPane();
 	//coondensed all the fileChooser stuff into this func
         FileChooser fileChooser = filePickerSetup();
 	file = fileChooser.showOpenDialog(stage);
         
         //Creating an image 
-        Image image = new Image(file.toURI().toString());
-
         MenuBar menuBar = new MenuBar();
         // --- Menu File
         Menu menuFile = new Menu("File");
 	
 	//--------setting up all the subItems for File
+	MenuItem open = new MenuItem("Open");
+	open.setOnAction(new EventHandler<ActionEvent>() {
+	    public void handle(ActionEvent t) {
+		file = fileChooser.showOpenDialog(stage);
+		imageSetup(file);
+		stage.setTitle(file.toURI().toString());
+	    }
+	    
+	});
+	
 	//save
 	MenuItem save = new MenuItem("Save");
 	save.setOnAction(new EventHandler<ActionEvent>() {
@@ -95,7 +126,7 @@ public class Paint extends Application {
 	    }
 	});
 	
-	menuFile.getItems().addAll(save,saveas,exit);
+	menuFile.getItems().addAll(open,save,saveas,exit);
 	   
 	
 	
@@ -119,17 +150,8 @@ public class Paint extends Application {
         double width  = screenBounds.getWidth();
         double height = screenBounds.getHeight();
         
-        //Setting the image view 
-        ImageView imageView = new ImageView(image); 
-        
-        //Setting the position of the image 
-        imageView.setX(0); 
-        imageView.setY(0); 
-        //setting the fit height and width of the image view 
-        imageView.setFitHeight(image.getHeight()); 
-        imageView.setFitWidth(image.getWidth()); 
-        imageView.setPreserveRatio(true);  
-
+	imageSetup(file);
+	
         mainBPane.setCenter(imageView);
         
         //Creating a scene object, setting the width and height to 90% of the screen size
@@ -140,6 +162,7 @@ public class Paint extends Application {
         //Setting title to the Stage to be the filename
         stage.setTitle(file.toURI().toString());
         stage.setScene(scene);
+	
         //Displaying the contents of the stage 
         stage.show(); 
     }
