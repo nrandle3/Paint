@@ -1,0 +1,24 @@
+Joes' Pain(t) Version 1.0.0 -  2020-08-28
+
+New features:
+
+	* It can Open (as opposed to crash)
+	* Opens an image on startup
+	* Can open a second image
+	* Implemented Save
+	* Implemented Save as
+	* Has Exit functionality
+
+Known issues:
+
+	* While present, menu items Edit and View do nothing
+
+Expected next sprint:
+
+	* Adding functionallity to Edit and View, Possibilities include:
+		* Edit may have croping ability
+		* View may let you zoom in
+Links:
+
+	* Demo: https://youtu.be/UfZJGzDmkMQ
+	* Github: https://github.com/nrandle3/Paint

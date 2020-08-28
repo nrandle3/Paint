@@ -86,6 +86,10 @@ public class Paint extends Application {
 	    
 	});
 	
+	
+	
+	
+	
 	//save
 	MenuItem save = new MenuItem("Save");
 	save.setOnAction(new EventHandler<ActionEvent>() {
