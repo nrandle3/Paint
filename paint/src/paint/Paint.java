@@ -21,7 +21,6 @@ import javafx.stage.Stage;
 import javax.imageio.ImageIO;
 
 /**
- *
  * @author nrand
  */
 public class Paint extends Application {
