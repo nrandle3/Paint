@@ -1,7 +1,6 @@
 package paint;
 
 import java.io.File;
-import java.io.FileInputStream;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.embed.swing.SwingFXUtils;
@@ -9,12 +8,16 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -28,15 +31,15 @@ public class Paint extends Application {
     //Setting up Vars
     private File file;
     private Image image;
-    private ImageView imageView = new ImageView();
     private BorderPane mainBPane;
-    
+    private Canvas canvas = new Canvas(1,1);
+    private GraphicsContext gc = canvas.getGraphicsContext2D();;
     
     
     //File chooser stuff condensed
-    public FileChooser filePickerSetup(){
+    public FileChooser filePickerSetup(String s){
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open Image File");
+        fileChooser.setTitle(s);
         FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("image files files", "*.png","*.jpg");
         fileChooser.getExtensionFilters().add(extFilter1);
         FileChooser.ExtensionFilter extFilter2 = new FileChooser.ExtensionFilter("all files", "*");
@@ -46,20 +49,12 @@ public class Paint extends Application {
     
     private void imageSetup(File file){
 	image = new Image(file.toURI().toString());
-	
-	//Setting the image view 
-        imageView.setImage(image); 
-        
-        //Setting the position of the image 
-        imageView.setX(0); 
-        imageView.setY(0); 
-        //setting the fit height and width of the image view 
-        imageView.setFitHeight(image.getHeight()); 
-        imageView.setFitWidth(image.getWidth()); 
-        imageView.setPreserveRatio(true); 
+	canvas.setHeight(image.getHeight());
+	canvas.setWidth(image.getWidth());
+	gc.drawImage(image,0,0);
+	gc.setStroke(Color.BLACK);
+        gc.setLineWidth(5);
     }
-    
-    
     
     
     @Override
@@ -67,15 +62,16 @@ public class Paint extends Application {
         //main device for centering stuff
         mainBPane = new BorderPane();
 	//coondensed all the fileChooser stuff into this func
-        FileChooser fileChooser = filePickerSetup();
+        FileChooser fileChooser = filePickerSetup("Open Image File");
 	file = fileChooser.showOpenDialog(stage);
-        
+	
         //Creating an image 
         MenuBar menuBar = new MenuBar();
         // --- Menu File
         Menu menuFile = new Menu("File");
 	
 	//--------setting up all the subItems for File
+	//Open
 	MenuItem open = new MenuItem("Open");
 	open.setOnAction(new EventHandler<ActionEvent>() {
 	    public void handle(ActionEvent t) {
@@ -86,17 +82,14 @@ public class Paint extends Application {
 	    
 	});
 	
-	
-	
-	
-	
 	//save
 	MenuItem save = new MenuItem("Save");
 	save.setOnAction(new EventHandler<ActionEvent>() {
 	    public void handle(ActionEvent t) {
 		if (file != null) {
 		    try {
-			ImageIO.write(SwingFXUtils.fromFXImage(image,
+			WritableImage im = canvas.snapshot(null, null);
+			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
 		    } catch (Exception ex) {
 			System.out.println(ex.getMessage());
@@ -114,7 +107,8 @@ public class Paint extends Application {
 		file = fileChooser.showSaveDialog(stage);
 		if (file != null) {
 		    try {
-			ImageIO.write(SwingFXUtils.fromFXImage(image,
+			WritableImage im = canvas.snapshot(null, null);
+			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
 		    } catch (Exception ex) {
 			System.out.println(ex.getMessage());
@@ -131,7 +125,7 @@ public class Paint extends Application {
 	});
 	
 	menuFile.getItems().addAll(open,save,saveas,exit);
-	   
+	
 	
 	
         // --- Menu Edit
@@ -149,6 +143,40 @@ public class Paint extends Application {
         menuBar.getMenus().addAll(menuFile, menuEdit, menuView);
         mainBPane.setTop(menuBar);
         
+	//Drawing
+	
+	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
+                new EventHandler<MouseEvent>(){
+
+            @Override
+            public void handle(MouseEvent event) {
+                gc.beginPath();
+                gc.moveTo(event.getX(), event.getY());
+                gc.stroke();
+            }
+        });
+	
+	canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, 
+                new EventHandler<MouseEvent>(){
+
+            @Override
+            public void handle(MouseEvent event) {
+                gc.lineTo(event.getX(), event.getY());
+                gc.stroke();
+            }
+        });
+
+        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, 
+                new EventHandler<MouseEvent>(){
+
+            @Override
+            public void handle(MouseEvent event) {
+
+            }
+        });
+	
+	
+	
 	//creating a width and height for the default unmaximized window
         Rectangle2D screenBounds = Screen.getPrimary().getBounds();
         double width  = screenBounds.getWidth();
@@ -156,7 +184,7 @@ public class Paint extends Application {
         
 	imageSetup(file);
 	
-        mainBPane.setCenter(imageView);
+        mainBPane.setCenter(canvas);
         
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
