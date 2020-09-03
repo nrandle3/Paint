@@ -101,9 +101,7 @@ public class Paint extends Application {
 	MenuItem saveas = new MenuItem("Save as");
 	saveas.setOnAction(new EventHandler<ActionEvent>() {
 	    public void handle(ActionEvent t) {
-		FileChooser fileChooser = new FileChooser();
-		fileChooser.setTitle("Save Image");
-		
+		FileChooser fileChooser = filePickerSetup("Save Image File");
 		file = fileChooser.showSaveDialog(stage);
 		if (file != null) {
 		    try {
@@ -143,8 +141,7 @@ public class Paint extends Application {
         menuBar.getMenus().addAll(menuFile, menuEdit, menuView);
         mainBPane.setTop(menuBar);
         
-	//Drawing
-	
+	//------------- Drawing
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
                 new EventHandler<MouseEvent>(){
 
