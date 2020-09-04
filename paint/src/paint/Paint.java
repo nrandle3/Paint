@@ -3,6 +3,8 @@ package paint;
 import java.io.File;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -14,11 +16,14 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
@@ -141,38 +146,59 @@ public class Paint extends Application {
 	menuView.getItems().add(nothing2);
 	
         menuBar.getMenus().addAll(menuFile, menuEdit, menuView);
-        mainBPane.setTop(menuBar);
+	//setting up slider setting (gonna have to redo this later for other settings)
+	
+	Slider lineWidth = new Slider();
+	VBox vbox  = new VBox();
+	GridPane grid = new GridPane();
+	grid.add(lineWidth,0,0);
+	
+	vbox.getChildren().addAll(menuBar,grid);
+	
+        mainBPane.setTop(vbox);
         
 	//------------- Drawing
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
-                new EventHandler<MouseEvent>(){
+		new EventHandler<MouseEvent>(){
+	    @Override
+	    public void handle(MouseEvent event) {
+		gc.beginPath();
+		gc.moveTo(event.getX(), event.getY());
+		gc.stroke();
 
-            @Override
-            public void handle(MouseEvent event) {
-                gc.beginPath();
-                gc.moveTo(event.getX(), event.getY());
-                gc.stroke();
+	    }
+	});
+
+	canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, 
+		new EventHandler<MouseEvent>(){
+	    @Override
+	    public void handle(MouseEvent event) {
+		gc.lineTo(event.getX(), event.getY());
+		gc.stroke();
+		gc.closePath();
+		gc.beginPath();
+		gc.moveTo(event.getX(), event.getY());
+	    }
+	});
+
+	canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, 
+		new EventHandler<MouseEvent>(){
+	    @Override
+	    public void handle(MouseEvent event) {
+		gc.lineTo(event.getX(), event.getY());
+		gc.stroke();
+		gc.closePath();
+	    }
+	});
+	
+	
+	lineWidth.valueProperty().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> ov,
+                Number old_val, Number new_val) {
+		    gc.setLineWidth(new_val.doubleValue());
             }
         });
 	
-	canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, 
-                new EventHandler<MouseEvent>(){
-
-            @Override
-            public void handle(MouseEvent event) {
-                gc.lineTo(event.getX(), event.getY());
-                gc.stroke();
-            }
-        });
-
-        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, 
-                new EventHandler<MouseEvent>(){
-
-            @Override
-            public void handle(MouseEvent event) {
-
-            }
-        });
 	
 	
 	//creating a width and height for the default unmaximized window
