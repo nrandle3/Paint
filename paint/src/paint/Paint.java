@@ -7,16 +7,21 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
+import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
@@ -59,8 +64,6 @@ public class Paint extends Application {
 	canvas.setHeight(image.getHeight());
 	canvas.setWidth(image.getWidth());
 	gc.drawImage(image,0,0);
-	gc.setStroke(Color.BLACK);
-        gc.setLineWidth(5);
     }
     
     
@@ -145,16 +148,64 @@ public class Paint extends Application {
 	MenuItem nothing2 = new MenuItem("N/A");
 	menuView.getItems().add(nothing2);
 	
-        menuBar.getMenus().addAll(menuFile, menuEdit, menuView);
-	//setting up slider setting (gonna have to redo this later for other settings)
+	// --- Menu View
+        Menu menuHelp = new Menu("Help");
+	MenuItem help = new MenuItem("Help");
+	menuHelp.getItems().add(help);
+	help.setOnAction(new EventHandler<ActionEvent>() {
+	    public void handle(ActionEvent t) {
+		TextArea textArea = new TextArea("Nathan Randle Paint v2\n"
+			+ "This is a paint Program, designed to draw things to the screen.\n"
+			+ "The program can display a choosen image and you can draw on the image.\n"
+			+ "If you would like to keep track of changes made to the project, please go to either:\n\n"
+			+ "Github: https://github.com/nrandle3/Paint\n\n"
+			+ "Youtube Release Playlist: https://www.youtube.com/playlist?list=PLothci2voUsZCxINW4OC54PYzrJ-V_F0X\n");
+		textArea.setEditable(false);
+		textArea.setWrapText(true);
+		GridPane gridPane = new GridPane();
+		gridPane.setMaxWidth(Double.MAX_VALUE);
+		gridPane.add(textArea, 0, 0);
+
+		Alert alert = new Alert(AlertType.INFORMATION);
+		alert.setTitle("Help Window");
+		alert.getDialogPane().setContent(gridPane);
+		alert.showAndWait();
+	    }
+	});
 	
-	Slider lineWidth = new Slider();
+	
+        menuBar.getMenus().addAll(menuFile, menuEdit, menuView,menuHelp);
+	
+	//setting up slider and color picker 
+	//(gonna have to redo this later for other settings)
 	VBox vbox  = new VBox();
 	GridPane grid = new GridPane();
+	
+	//slider
+	Slider lineWidth = new Slider();
+	lineWidth.valueProperty().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> ov,
+                Number old_val, Number new_val) {
+		    gc.setLineWidth(new_val.doubleValue());
+            }
+        });
 	grid.add(lineWidth,0,0);
 	
-	vbox.getChildren().addAll(menuBar,grid);
 	
+	//color Picker
+	final ColorPicker colorPicker = new ColorPicker();
+        colorPicker.setValue(Color.BLACK);
+	colorPicker.setOnAction(new EventHandler() {
+            public void handle(Event t) {
+                gc.setStroke(colorPicker.getValue());               
+            }
+        });
+	
+	grid.add(colorPicker,3,0);
+	
+	
+	//adding all top menu elements
+	vbox.getChildren().addAll(menuBar,grid);
         mainBPane.setTop(vbox);
         
 	//------------- Drawing
@@ -192,15 +243,6 @@ public class Paint extends Application {
 	});
 	
 	
-	lineWidth.valueProperty().addListener(new ChangeListener<Number>() {
-            public void changed(ObservableValue<? extends Number> ov,
-                Number old_val, Number new_val) {
-		    gc.setLineWidth(new_val.doubleValue());
-            }
-        });
-	
-	
-	
 	//creating a width and height for the default unmaximized window
         Rectangle2D screenBounds = Screen.getPrimary().getBounds();
         double width  = screenBounds.getWidth();
@@ -208,14 +250,14 @@ public class Paint extends Application {
 	
 	imageSetup(file);
 	
-	
+	//setting up scrolling for the canvas
+	//its a stackpane wrapped in a scrollpane so that it stays centered
 	StackPane stackp = new StackPane(canvas);
 	ScrollPane scrollPane = new ScrollPane(stackp);
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
 	scrollPane.setHvalue(0.5);
 	scrollPane.setVvalue(0.5);
-	//Double contentHeight = scrollPane.getContent().getBoundsInLocal().getHeight();
 	
         mainBPane.setCenter(scrollPane);
 	
