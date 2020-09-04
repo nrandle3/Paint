@@ -13,10 +13,12 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
@@ -173,16 +175,26 @@ public class Paint extends Application {
         });
 	
 	
-	
 	//creating a width and height for the default unmaximized window
         Rectangle2D screenBounds = Screen.getPrimary().getBounds();
         double width  = screenBounds.getWidth();
         double height = screenBounds.getHeight();
-        
+	
 	imageSetup(file);
 	
-        mainBPane.setCenter(canvas);
-        
+	
+	StackPane stackp = new StackPane(canvas);
+	ScrollPane scrollPane = new ScrollPane(stackp);
+	scrollPane.setFitToHeight(true);
+	scrollPane.setFitToWidth(true);
+	scrollPane.setHvalue(0.5);
+	scrollPane.setVvalue(0.5);
+	//Double contentHeight = scrollPane.getContent().getBoundsInLocal().getHeight();
+	
+        mainBPane.setCenter(scrollPane);
+	
+	
+	
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
         Scene scene = new Scene(mainBPane, .9*width, .9*height);
