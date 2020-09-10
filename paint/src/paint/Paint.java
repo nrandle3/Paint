@@ -30,6 +30,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.StrokeLineCap;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -44,17 +45,28 @@ public class Paint extends Application {
     private File file;
     private Image image;
     private BorderPane mainBPane;
+    //1,1 is dummy var
     private Canvas canvas = new Canvas(1,1);
-    private GraphicsContext gc = canvas.getGraphicsContext2D();;
+    private GraphicsContext gc = canvas.getGraphicsContext2D();
+    private double prevX, prevY;   // The previous location of the mouse, when
+                                   // the user is drawing by dragging the mouse.
+    private double middle = .5; //this is for middle of scroll wheel
+    
+    //these are the values Im using for the line width controller. 
+    //Can very easily get much larger, but smaller than .5 seems to be like sub pixel drawing
+    // ie very ugly
+    private double lineWidthMin = .5;
+    private double lineWidthMax = 100;
+    private double lineWidthStartVal = 5;
     
     
     //File chooser stuff condensed
     public FileChooser filePickerSetup(String s){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(s);
-        FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("image files files", "*.png","*.jpg");
+        FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("Image files", "*.png","*.jpg");
         fileChooser.getExtensionFilters().add(extFilter1);
-        FileChooser.ExtensionFilter extFilter2 = new FileChooser.ExtensionFilter("all files", "*");
+        FileChooser.ExtensionFilter extFilter2 = new FileChooser.ExtensionFilter("All files", "*");
         fileChooser.getExtensionFilters().add(extFilter2);
         return fileChooser;
     }
@@ -79,6 +91,7 @@ public class Paint extends Application {
         MenuBar menuBar = new MenuBar();
         // --- Menu File
         Menu menuFile = new Menu("File");
+	
 	
 	//--------setting up all the subItems for File
 	//Open
@@ -148,7 +161,7 @@ public class Paint extends Application {
 	MenuItem nothing2 = new MenuItem("N/A");
 	menuView.getItems().add(nothing2);
 	
-	// --- Menu View
+	// --- Menu Help
         Menu menuHelp = new Menu("Help");
 	MenuItem help = new MenuItem("Help");
 	menuHelp.getItems().add(help);
@@ -158,7 +171,7 @@ public class Paint extends Application {
 			+ "This is a paint Program, designed to draw things to the screen.\n"
 			+ "The program can display a choosen image and you can draw on the image.\n"
 			+ "If you would like to keep track of changes made to the project, please go to either:\n\n"
-			+ "Github: https://github.com/nrandle3/Paint\n\n"
+			+ "Github: https://github.com/nrandle3/Paint \n\n"
 			+ "Youtube Release Playlist: https://www.youtube.com/playlist?list=PLothci2voUsZCxINW4OC54PYzrJ-V_F0X\n");
 		textArea.setEditable(false);
 		textArea.setWrapText(true);
@@ -179,17 +192,19 @@ public class Paint extends Application {
 	//setting up slider and color picker 
 	//(gonna have to redo this later for other settings)
 	VBox vbox  = new VBox();
-	GridPane grid = new GridPane();
+	GridPane toolSettingsGrid = new GridPane();
 	
 	//slider
-	Slider lineWidth = new Slider();
+	Slider lineWidth = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
+	gc.setLineWidth(lineWidthStartVal);
 	lineWidth.valueProperty().addListener(new ChangeListener<Number>() {
             public void changed(ObservableValue<? extends Number> ov,
                 Number old_val, Number new_val) {
 		    gc.setLineWidth(new_val.doubleValue());
+		    System.out.println(new_val);
             }
         });
-	grid.add(lineWidth,0,0);
+	toolSettingsGrid.add(lineWidth,0,0);
 	
 	
 	//color Picker
@@ -201,34 +216,33 @@ public class Paint extends Application {
             }
         });
 	
-	grid.add(colorPicker,3,0);
+	toolSettingsGrid.add(colorPicker,3,0);
 	
 	
 	//adding all top menu elements
-	vbox.getChildren().addAll(menuBar,grid);
+	vbox.getChildren().addAll(menuBar,toolSettingsGrid);
         mainBPane.setTop(vbox);
         
 	//------------- Drawing
+	
+	gc.setLineCap( StrokeLineCap.ROUND );
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		gc.beginPath();
-		gc.moveTo(event.getX(), event.getY());
-		gc.stroke();
+		prevX = event.getX();
+		prevY = event.getY();
 
 	    }
 	});
-
+	
 	canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, 
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		gc.lineTo(event.getX(), event.getY());
-		gc.stroke();
-		gc.closePath();
-		gc.beginPath();
-		gc.moveTo(event.getX(), event.getY());
+		gc.strokeLine(prevX, prevY, event.getX(), event.getY());
+		prevX = event.getX();
+		prevY = event.getY();
 	    }
 	});
 
@@ -236,9 +250,7 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		gc.lineTo(event.getX(), event.getY());
-		gc.stroke();
-		gc.closePath();
+		gc.strokeLine(prevX, prevY, event.getX(), event.getY());
 	    }
 	});
 	
@@ -256,9 +268,10 @@ public class Paint extends Application {
 	ScrollPane scrollPane = new ScrollPane(stackp);
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
-	scrollPane.setHvalue(0.5);
-	scrollPane.setVvalue(0.5);
 	
+	//This sets the initial value of the scrollbars, .5 for 50% aka the middle
+	scrollPane.setHvalue(middle);
+	scrollPane.setVvalue(middle);
         mainBPane.setCenter(scrollPane);
 	
 	
