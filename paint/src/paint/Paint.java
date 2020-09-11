@@ -26,6 +26,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -63,7 +64,7 @@ public class Paint extends Application {
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
     //initing tool selected with pencil as default
-    private String toolSelected = "pencil";
+    private String toolSelected = "dropper";
     //creating a line off canvas for preview
     Line line = new Line();
     
@@ -257,6 +258,7 @@ public class Paint extends Application {
 	//color Picker
 	final ColorPicker colorPicker = new ColorPicker();
         colorPicker.setValue(Color.BLACK);
+	//TODO: find out how to update color picker on change rather than on action
 	colorPicker.setOnAction(new EventHandler() {
             public void handle(Event t) {
                 gc.setStroke(colorPicker.getValue());               
@@ -280,15 +282,24 @@ public class Paint extends Application {
 	    public void handle(MouseEvent event) {
 		prevX = event.getX();
 		prevY = event.getY();
+		switch(toolSelected){
+		    case "pencil":
+			break;
+		    case "line":
+			line.setDisable(false);
+			line.setStartX(event.getX());
+			line.setStartY(event.getY());
+			line.setEndX(event.getX());
+			line.setEndY(event.getY());
+			line.setStroke(colorPicker.getValue());
+			line.setStrokeWidth(lineWidth.getValue());
+			line.setStrokeLineCap(StrokeLineCap.ROUND);
+			break;
+		    case "dropper":
+			WritableImage snap = gc.getCanvas().snapshot(null, null);
+			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 		
-		line.setDisable(false);
-		line.setStartX(event.getX());
-		line.setStartY(event.getY());
-		line.setEndX(event.getX());
-		line.setEndY(event.getY());
-		line.setStroke(colorPicker.getValue());
-		line.setStrokeWidth(lineWidth.getValue());
-		line.setStrokeLineCap(StrokeLineCap.ROUND);
+		}
 		
 		
 	    }
