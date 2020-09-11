@@ -92,6 +92,7 @@ public class Paint extends Application {
     
     
     @Override
+    @SuppressWarnings("Convert2Lambda")
     public void start(Stage stage) throws Exception {
         //main device for centering stuff
         mainBPane = new BorderPane();
@@ -109,6 +110,7 @@ public class Paint extends Application {
 	//Open
 	MenuItem open = new MenuItem("Open");
 	open.setOnAction(new EventHandler<ActionEvent>() {
+	    @Override
 	    public void handle(ActionEvent t) {
 		file = fileChooser.showOpenDialog(stage);
 		imageSetup(file);
