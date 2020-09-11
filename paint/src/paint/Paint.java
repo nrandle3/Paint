@@ -3,6 +3,8 @@ package paint;
 import java.io.File;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
@@ -37,6 +39,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
@@ -55,22 +58,28 @@ public class Paint extends Application {
     //1,1 is dummy var
     private Canvas canvas = new Canvas(1,1);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
-    private double prevX, prevY;   // The previous location of the mouse, when
-                                   // the user is drawing by dragging the mouse.
+    
     private double middle = .5; //this is for middle of scroll wheel
     
     //these are the values Im using for the line width controller. 
     //Can very easily get much larger, but smaller than .5 seems to be like sub pixel drawing
     // ie very ugly
+    private double prevX, prevY;   // The previous location of the mouse, when
+                                   // the user is drawing by dragging the mouse.
+    private double initialX,initialY;
     private double lineWidthMin = .5;
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
     //initing tool selected with pencil as default
-    private String toolSelected = "pencil";
+    
     //creating a line off canvas for preview
-    Line line = new Line();
+    private Line line = new Line();
+    private Rectangle rect = new Rectangle();
+    private double dx;
+    private double dy;
     
     private double btnSize = 25;
+    private StringProperty toolStringProperty = new SimpleStringProperty() ;
     
     public Button createBtnImage(double btnSize, String imgPath, String toolName){
 	//setting up line button
@@ -84,7 +93,7 @@ public class Paint extends Application {
 	btn.setGraphic(view);
 	btn.setOnAction(new EventHandler() {
             public void handle(Event t) {
-                toolSelected = toolName;               
+                toolStringProperty.set(toolName);               
             }
         });
 	return btn;
@@ -228,15 +237,15 @@ public class Paint extends Application {
 	
 	//-----Setting Up tools-----
 	
-	//setting up slider and color picker 
-	//(gonna have to redo this later for other settings)
 	VBox vbox  = new VBox();
 	GridPane toolSettingsGrid = new GridPane();
 	GridPane toolSelectionGrid = new GridPane();
 	
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil"), 0, 0);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line"), 1, 0);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper"), 0, 1);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil")   , 0, 0);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 1);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 1, 1);
+	
 	
 	
 	//slider
@@ -249,20 +258,46 @@ public class Paint extends Application {
 		    System.out.println(new_val);
             }
         });
-	toolSettingsGrid.add(lineWidth,0,0);
+	
 	
 	
 	//color Picker
 	final ColorPicker colorPicker = new ColorPicker();
         colorPicker.setValue(Color.BLACK);
-	//TODO: find out how to update color picker on change rather than on action
 	colorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
-                gc.setStroke(colorPicker.getValue());               
+                gc.setStroke(colorPicker.getValue());    
+		
         });
 	
 	
-	toolSettingsGrid.add(colorPicker,3,0);
-	
+	//tool settings grid changing
+	toolStringProperty.addListener(new ChangeListener<String>() {
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                System.out.println("changed " + oldValue + "->" + newValue);
+		toolSettingsGrid.getChildren().clear();
+		switch(newValue){
+		    case "pencil":
+			toolSettingsGrid.add(lineWidth,0,0);
+			toolSettingsGrid.add(colorPicker,3,0);
+			break;
+			
+		    case "line":
+			toolSettingsGrid.add(lineWidth,0,0);
+			toolSettingsGrid.add(colorPicker,3,0);
+			break;
+			
+		    case "dropper":
+			toolSettingsGrid.add(colorPicker,3,0);
+			break;
+			
+		    case "rectangle":
+			toolSettingsGrid.add(colorPicker,3,0);
+			toolSettingsGrid.add(lineWidth,0,0);
+		    break;
+
+		}
+            }
+        });
 	
 	//adding all top menu elements
 	vbox.getChildren().addAll(menuBar,toolSettingsGrid);
@@ -277,11 +312,15 @@ public class Paint extends Application {
 	    public void handle(MouseEvent event) {
 		prevX = event.getX();
 		prevY = event.getY();
-		switch(toolSelected){
+		initialX = event.getX();
+		initialY = event.getY();
+		
+		
+		switch(toolStringProperty.get()){
 		    case "pencil":
 			break;
 		    case "line":
-			line.setDisable(false);
+			line.setVisible(true);
 			line.setStartX(event.getX());
 			line.setStartY(event.getY());
 			line.setEndX(event.getX());
@@ -290,11 +329,14 @@ public class Paint extends Application {
 			line.setStrokeWidth(lineWidth.getValue());
 			line.setStrokeLineCap(StrokeLineCap.ROUND);
 			break;
-		    
-		
+		    case "rectangle":
+			rect.setVisible(true);
+			rect.setX(event.getX());
+			rect.setY(event.getY());
+			rect.setWidth(0);
+			rect.setHeight(0);
+			break;
 		}
-		
-		
 	    }
 	});
 	
@@ -302,19 +344,41 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		switch(toolSelected){
+		
+		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
 			break;
+			
 		    case "line":
 			line.setEndX(event.getX());
 			line.setEndY(event.getY());
 			break;
+			
 		    case "dropper":
 			WritableImage snap = gc.getCanvas().snapshot(null, null);
 			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 			break;
+			
+		    case "rectangle":
+			dx = event.getX() - initialX;
+			if (dx < 0){
+			    rect.setTranslateX(dx);
+			    rect.setWidth(-dx);
+			} else {
+			    rect.setTranslateX(0);
+			    rect.setWidth(dx);
+			}
+			dy = event.getY() - initialY;
+			if (dy < 0){
+			    rect.setTranslateY(dy);
+			    rect.setHeight(-dy);
+			} else {
+			    rect.setTranslateY(0);
+			    rect.setHeight(dy);
+			}
 		}
+		
 		prevX = event.getX();
 		prevY = event.getY();
 	    }
@@ -325,19 +389,50 @@ public class Paint extends Application {
 	    @Override
 	    public void handle(MouseEvent event) {
 		
-		switch(toolSelected){
+		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
 			break;
+			
 		    case "line":
 			gc.strokeLine(line.getStartX(),line.getStartY(),event.getX(), event.getY());
+			line.setVisible(false);
 			break;
+			
 		    case "dropper":
 			WritableImage snap = gc.getCanvas().snapshot(null, null);
 			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 			break;
+			
+		    case "rectangle":
+			double _x;
+			double _y;
+			double _h;
+			double _w;
+			
+			dx = event.getX() - initialX;
+			if (dx < 0){
+			    _x = rect.getX() + dx;
+			    _w = -dx;
+			} else {
+			    rect.setTranslateX(0);
+			    _x = rect.getX();
+			    _w = dx;
+			}
+			dy = event.getY() - initialY;
+			if (dy < 0){
+			    _y = rect.getY() + dy;
+			    _h = -dy;
+			} else {
+			    _y = rect.getY();
+			    _h = dy;
+			}
+			
+			gc.strokeRect(_x,_y,_w,_h);
+			rect.setVisible(false);
+			break;
 		}
-		line.setDisable(true);
+		
 	    }
 	});
 	
@@ -351,7 +446,7 @@ public class Paint extends Application {
 	
 	//setting up scrolling for the canvas
 	//its a stackpane wrapped in a scrollpane so that it stays centered
-	Group group = new Group(canvas,line);
+	Group group = new Group(canvas,line,rect);
 	StackPane stackp = new StackPane(group);
 	ScrollPane scrollPane = new ScrollPane(stackp);
 	scrollPane.setFitToHeight(true);
