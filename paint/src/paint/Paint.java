@@ -26,8 +26,10 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -64,11 +66,29 @@ public class Paint extends Application {
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
     //initing tool selected with pencil as default
-    private String toolSelected = "dropper";
+    private String toolSelected = "pencil";
     //creating a line off canvas for preview
     Line line = new Line();
     
     private double btnSize = 25;
+    
+    public Button createBtnImage(double btnSize, String imgPath, String toolName){
+	//setting up line button
+	Image img = new Image(imgPath);
+	ImageView view = new ImageView(img);
+	view.setFitHeight(btnSize);
+	view.setFitWidth(btnSize);
+	
+	Button btn = new Button();
+	btn.setPrefSize(btnSize, btnSize);
+	btn.setGraphic(view);
+	btn.setOnAction(new EventHandler() {
+            public void handle(Event t) {
+                toolSelected = toolName;               
+            }
+        });
+	return btn;
+    }
     
     
     
@@ -103,9 +123,7 @@ public class Paint extends Application {
         //Creating an image 
         MenuBar menuBar = new MenuBar();
         // --- Menu File
-        Menu menuFile = new Menu("File");
-	
-	
+        Menu menuFile = new Menu("_File");
 	//--------setting up all the subItems for File
 	//Open
 	MenuItem open = new MenuItem("Open");
@@ -118,7 +136,7 @@ public class Paint extends Application {
 	    }
 	    
 	});
-	
+	open.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
 	//save
 	MenuItem save = new MenuItem("Save");
 	save.setOnAction(new EventHandler<ActionEvent>() {
@@ -134,6 +152,8 @@ public class Paint extends Application {
 		}
 	    }
 	});
+	save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+	
 	//saveas
 	MenuItem saveas = new MenuItem("Save as");
 	saveas.setOnAction(new EventHandler<ActionEvent>() {
@@ -151,6 +171,8 @@ public class Paint extends Application {
 		}
 	    }
 	});
+	saveas.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN,KeyCombination.SHIFT_DOWN));
+	
 	//Exit
 	MenuItem exit = new MenuItem("Exit");
 	exit.setOnAction(new EventHandler<ActionEvent>() {
@@ -158,25 +180,26 @@ public class Paint extends Application {
 		System.exit(0);
 	    }
 	});
+	save.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
 	
 	menuFile.getItems().addAll(open,save,saveas,exit);
 	
 	
 	
         // --- Menu Edit
-        Menu menuEdit = new Menu("Edit");
+        Menu menuEdit = new Menu("_Edit");
 	//does nothing
 	MenuItem nothing1 = new MenuItem("N/A");
 	menuEdit.getItems().add(nothing1);
 	
 	
         // --- Menu View
-        Menu menuView = new Menu("View");
+        Menu menuView = new Menu("_View");
 	MenuItem nothing2 = new MenuItem("N/A");
 	menuView.getItems().add(nothing2);
 	
 	// --- Menu Help
-        Menu menuHelp = new Menu("Help");
+        Menu menuHelp = new Menu("_Help");
 	MenuItem help = new MenuItem("Help");
 	menuHelp.getItems().add(help);
 	help.setOnAction(new EventHandler<ActionEvent>() {
@@ -200,7 +223,6 @@ public class Paint extends Application {
 	    }
 	});
 	
-	
         menuBar.getMenus().addAll(menuFile, menuEdit, menuView,menuHelp);
 	
 	
@@ -212,37 +234,10 @@ public class Paint extends Application {
 	GridPane toolSettingsGrid = new GridPane();
 	GridPane toolSelectionGrid = new GridPane();
 	
-	//setting up pencil button
-	Image img = new Image("assets/pencil.png");
-	ImageView view = new ImageView(img);
-	view.setFitHeight(btnSize);
-	view.setFitWidth(btnSize);
-	Button pencilBtn = new Button();
-	pencilBtn.setPrefSize(btnSize, btnSize);
-	pencilBtn.setGraphic(view);
-	pencilBtn.setOnAction(new EventHandler() {
-            public void handle(Event t) {
-                toolSelected = "pencil";               
-            }
-        });
-	toolSelectionGrid.add(pencilBtn, 0, 0);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil"), 0, 0);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line"), 1, 0);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper"), 0, 1);
 	
-	
-	
-	//setting up pencil button
-	img = new Image("assets/line.png");
-	view = new ImageView(img);
-	view.setFitHeight(btnSize);
-	view.setFitWidth(btnSize);
-	Button lineBtn = new Button();
-	lineBtn.setPrefSize(btnSize, btnSize);
-	lineBtn.setGraphic(view);
-	lineBtn.setOnAction(new EventHandler() {
-            public void handle(Event t) {
-                toolSelected = "line";               
-            }
-        });
-	toolSelectionGrid.add(lineBtn, 0, 1);
 	
 	//slider
 	Slider lineWidth = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -261,10 +256,8 @@ public class Paint extends Application {
 	final ColorPicker colorPicker = new ColorPicker();
         colorPicker.setValue(Color.BLACK);
 	//TODO: find out how to update color picker on change rather than on action
-	colorPicker.setOnAction(new EventHandler() {
-            public void handle(Event t) {
+	colorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
                 gc.setStroke(colorPicker.getValue());               
-            }
         });
 	
 	
@@ -297,9 +290,7 @@ public class Paint extends Application {
 			line.setStrokeWidth(lineWidth.getValue());
 			line.setStrokeLineCap(StrokeLineCap.ROUND);
 			break;
-		    case "dropper":
-			WritableImage snap = gc.getCanvas().snapshot(null, null);
-			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
+		    
 		
 		}
 		
@@ -319,6 +310,10 @@ public class Paint extends Application {
 			line.setEndX(event.getX());
 			line.setEndY(event.getY());
 			break;
+		    case "dropper":
+			WritableImage snap = gc.getCanvas().snapshot(null, null);
+			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
+			break;
 		}
 		prevX = event.getX();
 		prevY = event.getY();
@@ -336,6 +331,10 @@ public class Paint extends Application {
 			break;
 		    case "line":
 			gc.strokeLine(line.getStartX(),line.getStartY(),event.getX(), event.getY());
+			break;
+		    case "dropper":
+			WritableImage snap = gc.getCanvas().snapshot(null, null);
+			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 			break;
 		}
 		line.setDisable(true);
@@ -368,9 +367,11 @@ public class Paint extends Application {
 	
 	
         mainBPane.setCenter(scrollPane);
+	
 	mainBPane.setLeft(toolSelectionGrid);
 	
 	//Styling
+	toolSelectionGrid.setStyle("-fx-background-color: #061A32;");
 	vbox.setStyle("-fx-background-color: #CDD7D6;");
 	scrollPane.setStyle("-fx-background-color: #102542;");
 	mainBPane.setStyle("-fx-background-color: #102542;");
