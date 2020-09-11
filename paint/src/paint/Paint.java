@@ -10,11 +10,13 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -23,6 +25,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -30,6 +33,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
@@ -58,13 +62,16 @@ public class Paint extends Application {
     private double lineWidthMin = .5;
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
-    
+    //initing tool selected with pencil as default
+    private String toolSelected = "Pencil";
+    //creating a line off canvas for preview
+    Line line = new Line();
     
     //File chooser stuff condensed
     public FileChooser filePickerSetup(String s){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(s);
-        FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("Image files", "*.png","*.jpg");
+        FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("Image files", "*.png","*.jpg","*.gif");
         fileChooser.getExtensionFilters().add(extFilter1);
         FileChooser.ExtensionFilter extFilter2 = new FileChooser.ExtensionFilter("All files", "*");
         fileChooser.getExtensionFilters().add(extFilter2);
@@ -189,10 +196,25 @@ public class Paint extends Application {
 	
         menuBar.getMenus().addAll(menuFile, menuEdit, menuView,menuHelp);
 	
+	
+	//-----Setting Up tools-----
+	
 	//setting up slider and color picker 
 	//(gonna have to redo this later for other settings)
 	VBox vbox  = new VBox();
 	GridPane toolSettingsGrid = new GridPane();
+	GridPane toolSelectionGrid = new GridPane();
+	Image img = new Image("assets/pencil.png");
+	ImageView view = new ImageView(img);
+	view.setFitHeight(25);
+	view.setFitWidth(25);
+	Button pencilButton = new Button();
+	pencilButton.setGraphic(view);
+
+	//A button with the specified text caption.
+	Button button2 = new Button();
+	toolSelectionGrid.add(pencilButton, 0, 0);
+	toolSelectionGrid.add(button2, 0, 1);
 	
 	//slider
 	Slider lineWidth = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -216,6 +238,7 @@ public class Paint extends Application {
             }
         });
 	
+	
 	toolSettingsGrid.add(colorPicker,3,0);
 	
 	
@@ -232,7 +255,17 @@ public class Paint extends Application {
 	    public void handle(MouseEvent event) {
 		prevX = event.getX();
 		prevY = event.getY();
-
+		
+		line.setDisable(false);
+		line.setStartX(event.getX());
+		line.setStartY(event.getY());
+		line.setEndX(event.getX());
+		line.setEndY(event.getY());
+		line.setStroke(colorPicker.getValue());
+		line.setStrokeWidth(lineWidth.getValue());
+		line.setStrokeLineCap(StrokeLineCap.ROUND);
+		
+		
 	    }
 	});
 	
@@ -240,7 +273,15 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		gc.strokeLine(prevX, prevY, event.getX(), event.getY());
+		switch(toolSelected){
+		    case "Pencil":
+			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
+			break;
+		    case "Line":
+			line.setEndX(event.getX());
+			line.setEndY(event.getY());
+			break;
+		}
 		prevX = event.getX();
 		prevY = event.getY();
 	    }
@@ -250,7 +291,16 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		gc.strokeLine(prevX, prevY, event.getX(), event.getY());
+		
+		switch(toolSelected){
+		    case "Pencil":
+			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
+			break;
+		    case "Line":
+			gc.strokeLine(line.getStartX(),line.getStartY(),event.getX(), event.getY());
+			break;
+		}
+		line.setDisable(true);
 	    }
 	});
 	
@@ -264,17 +314,29 @@ public class Paint extends Application {
 	
 	//setting up scrolling for the canvas
 	//its a stackpane wrapped in a scrollpane so that it stays centered
-	StackPane stackp = new StackPane(canvas);
+	Group group = new Group(canvas,line);
+	StackPane stackp = new StackPane(group);
 	ScrollPane scrollPane = new ScrollPane(stackp);
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
-	
+	scrollPane.setStyle("-fx-focus-color: transparent;");
+	mainBPane.setStyle("-fx-focus-color: transparent;");
+	stackp.setStyle("-fx-focus-color: transparent;");
 	//This sets the initial value of the scrollbars, .5 for 50% aka the middle
 	scrollPane.setHvalue(middle);
 	scrollPane.setVvalue(middle);
+	
+	
+	
+	
         mainBPane.setCenter(scrollPane);
+	mainBPane.setLeft(toolSelectionGrid);
 	
-	
+	//Styling
+	vbox.setStyle("-fx-background-color: #CDD7D6;");
+	scrollPane.setStyle("-fx-background-color: #102542;");
+	mainBPane.setStyle("-fx-background-color: #102542;");
+	stackp.setStyle("-fx-background-color: #102542;");
 	
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
