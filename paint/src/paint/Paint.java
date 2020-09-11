@@ -63,9 +63,13 @@ public class Paint extends Application {
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
     //initing tool selected with pencil as default
-    private String toolSelected = "Pencil";
+    private String toolSelected = "pencil";
     //creating a line off canvas for preview
     Line line = new Line();
+    
+    private double btnSize = 25;
+    
+    
     
     //File chooser stuff condensed
     public FileChooser filePickerSetup(String s){
@@ -204,17 +208,38 @@ public class Paint extends Application {
 	VBox vbox  = new VBox();
 	GridPane toolSettingsGrid = new GridPane();
 	GridPane toolSelectionGrid = new GridPane();
+	
+	//setting up pencil button
 	Image img = new Image("assets/pencil.png");
 	ImageView view = new ImageView(img);
-	view.setFitHeight(25);
-	view.setFitWidth(25);
-	Button pencilButton = new Button();
-	pencilButton.setGraphic(view);
-
-	//A button with the specified text caption.
-	Button button2 = new Button();
-	toolSelectionGrid.add(pencilButton, 0, 0);
-	toolSelectionGrid.add(button2, 0, 1);
+	view.setFitHeight(btnSize);
+	view.setFitWidth(btnSize);
+	Button pencilBtn = new Button();
+	pencilBtn.setPrefSize(btnSize, btnSize);
+	pencilBtn.setGraphic(view);
+	pencilBtn.setOnAction(new EventHandler() {
+            public void handle(Event t) {
+                toolSelected = "pencil";               
+            }
+        });
+	toolSelectionGrid.add(pencilBtn, 0, 0);
+	
+	
+	
+	//setting up pencil button
+	img = new Image("assets/line.png");
+	view = new ImageView(img);
+	view.setFitHeight(btnSize);
+	view.setFitWidth(btnSize);
+	Button lineBtn = new Button();
+	lineBtn.setPrefSize(btnSize, btnSize);
+	lineBtn.setGraphic(view);
+	lineBtn.setOnAction(new EventHandler() {
+            public void handle(Event t) {
+                toolSelected = "line";               
+            }
+        });
+	toolSelectionGrid.add(lineBtn, 0, 1);
 	
 	//slider
 	Slider lineWidth = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -274,10 +299,10 @@ public class Paint extends Application {
 	    @Override
 	    public void handle(MouseEvent event) {
 		switch(toolSelected){
-		    case "Pencil":
+		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
 			break;
-		    case "Line":
+		    case "line":
 			line.setEndX(event.getX());
 			line.setEndY(event.getY());
 			break;
@@ -293,10 +318,10 @@ public class Paint extends Application {
 	    public void handle(MouseEvent event) {
 		
 		switch(toolSelected){
-		    case "Pencil":
+		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
 			break;
-		    case "Line":
+		    case "line":
 			gc.strokeLine(line.getStartX(),line.getStartY(),event.getX(), event.getY());
 			break;
 		}
