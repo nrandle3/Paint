@@ -11,6 +11,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.geometry.HPos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -19,6 +20,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -41,6 +43,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -81,6 +84,10 @@ public class Paint extends Application {
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty() ;
     
+    public static double clamp(double val, double min, double max) {
+	return Math.max(min, Math.min(max, val));
+    }
+    
     public Button createBtnImage(double btnSize, String imgPath, String toolName){
 	//setting up line button
 	Image img = new Image(imgPath);
@@ -98,8 +105,6 @@ public class Paint extends Application {
         });
 	return btn;
     }
-    
-    
     
     //File chooser stuff condensed
     public FileChooser filePickerSetup(String s){
@@ -249,13 +254,16 @@ public class Paint extends Application {
 	
 	
 	//slider
-	Slider lineWidth = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
+	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
 	gc.setLineWidth(lineWidthStartVal);
-	lineWidth.valueProperty().addListener(new ChangeListener<Number>() {
+	
+	lineWidthSlider.valueProperty().addListener(new ChangeListener<Number>() {
             public void changed(ObservableValue<? extends Number> ov,
                 Number old_val, Number new_val) {
 		    gc.setLineWidth(new_val.doubleValue());
-		    System.out.println(new_val);
+		    line.setStrokeWidth(new_val.doubleValue());
+		    rect.setStrokeWidth(lineWidthSlider.getValue());
+		    
             }
         });
 	
@@ -265,8 +273,24 @@ public class Paint extends Application {
 	final ColorPicker colorPicker = new ColorPicker();
         colorPicker.setValue(Color.BLACK);
 	colorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
-                gc.setStroke(colorPicker.getValue());    
-		
+                gc.setStroke(colorPicker.getValue());
+		line.setStroke(colorPicker.getValue());
+        });
+	
+	//Fill
+	final ColorPicker fillColorPicker = new ColorPicker();
+        fillColorPicker.setValue(Color.BLACK);
+	
+	CheckBox fillCheckBox = new CheckBox("Filled");
+	
+	fillColorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
+                if (fillCheckBox.isSelected()) {
+		    rect.setFill(newvalue);
+		    gc.setFill(newvalue);
+		} else {
+		    rect.setFill(null);
+		    gc.setFill(null);
+		}
         });
 	
 	
@@ -275,24 +299,60 @@ public class Paint extends Application {
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 System.out.println("changed " + oldValue + "->" + newValue);
 		toolSettingsGrid.getChildren().clear();
+		Text lineWLabel;
+		Text ColorLabel;
 		switch(newValue){
 		    case "pencil":
-			toolSettingsGrid.add(lineWidth,0,0);
-			toolSettingsGrid.add(colorPicker,3,0);
+			lineWLabel = new Text("Line Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("Line Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
+			
 			break;
 			
 		    case "line":
-			toolSettingsGrid.add(lineWidth,0,0);
-			toolSettingsGrid.add(colorPicker,3,0);
+			lineWLabel = new Text("Line Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("Line Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
 			break;
 			
 		    case "dropper":
-			toolSettingsGrid.add(colorPicker,3,0);
+			
+			ColorLabel = new Text("Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
 			break;
 			
 		    case "rectangle":
-			toolSettingsGrid.add(colorPicker,3,0);
-			toolSettingsGrid.add(lineWidth,0,0);
+			lineWLabel = new Text("OutLine Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("OutLine Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
+			
+			toolSettingsGrid.add(fillCheckBox,4,1);
+			
+			ColorLabel = new Text("Fill Color");
+			toolSettingsGrid.add(ColorLabel, 5, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(fillColorPicker,5,1);
+			
 		    break;
 
 		}
@@ -306,6 +366,11 @@ public class Paint extends Application {
 	//------------- Drawing
 	
 	gc.setLineCap( StrokeLineCap.ROUND );
+	rect.setVisible(false);
+	line.setVisible(false);
+	rect.setFill(null);
+	
+
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
 		new EventHandler<MouseEvent>(){
 	    @Override
@@ -325,8 +390,7 @@ public class Paint extends Application {
 			line.setStartY(event.getY());
 			line.setEndX(event.getX());
 			line.setEndY(event.getY());
-			line.setStroke(colorPicker.getValue());
-			line.setStrokeWidth(lineWidth.getValue());
+			
 			line.setStrokeLineCap(StrokeLineCap.ROUND);
 			break;
 		    case "rectangle":
@@ -335,6 +399,8 @@ public class Paint extends Application {
 			rect.setY(event.getY());
 			rect.setWidth(0);
 			rect.setHeight(0);
+			rect.setStrokeWidth(lineWidthSlider.getValue());
+			rect.setStroke(colorPicker.getValue());
 			break;
 		}
 	    }
@@ -377,6 +443,7 @@ public class Paint extends Application {
 			    rect.setTranslateY(0);
 			    rect.setHeight(dy);
 			}
+			
 		}
 		
 		prevX = event.getX();
@@ -446,7 +513,9 @@ public class Paint extends Application {
 	
 	//setting up scrolling for the canvas
 	//its a stackpane wrapped in a scrollpane so that it stays centered
+	
 	Group group = new Group(canvas,line,rect);
+	
 	StackPane stackp = new StackPane(group);
 	ScrollPane scrollPane = new ScrollPane(stackp);
 	scrollPane.setFitToHeight(true);
