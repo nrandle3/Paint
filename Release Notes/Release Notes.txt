@@ -28,6 +28,7 @@ New features:
 Known issues:
 
 	* Oval tool shows a square when dragging the cursor, instead of an oval. When released, however, it does make an oval
+	* Although not a real 'issue' The image now centers in the top left, rather than the center like how I prefer.
 
 Expected next sprint:
 	* Zoom only zooms to center right now, it should zoom to cursor instead
@@ -35,7 +36,7 @@ Expected next sprint:
 	* fix oval tool bug
 
 
-Demo: https://youtu.be/O8lZe-K37Zc
+Demo: https://youtu.be/dFB4JdKaOyc
 
 
 

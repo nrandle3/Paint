@@ -115,6 +115,16 @@ public class Paint extends Application {
         gc.drawImage(undoStack.pop(),0,0);
         }
     }
+    public void resize(double x, double y){
+        save();
+        canvas.setWidth(x);
+        canvas.setHeight(y);
+        Image newCanvasimg = undoStack.pop();
+        ImageView imgview = new ImageView(newCanvasimg);
+        imgview.setFitWidth(x);
+        imgview.setFitHeight(y);
+        gc.drawImage(imgview.snapshot(null,null),0,0);
+    }
     
     
     public static double clamp(double val, double min, double max) {
@@ -288,8 +298,7 @@ public class Paint extends Application {
 
 		result.ifPresent(pair -> {
 		    System.out.println("From=" + pair.getKey() + ", To=" + pair.getValue());
-                    canvas.setWidth(Double.parseDouble(pair.getKey()));
-                    canvas.setHeight(Double.parseDouble(pair.getValue()));
+                    resize(Double.parseDouble(pair.getKey()),Double.parseDouble(pair.getValue()));
 		});
 	    }
 	});
@@ -733,19 +742,22 @@ public class Paint extends Application {
 	
 	Group group = new Group(canvas,line,rect,oval);
 	stackPane = new StackPane(group);
-	ScrollPane scrollPane = new ScrollPane(stackPane);
+        Group group2 = new Group(stackPane);
+	ScrollPane scrollPane = new ScrollPane(group2);
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
+        StackPane stackPaneCenterer = new StackPane(scrollPane);
 	scrollPane.setStyle("-fx-focus-color: transparent;");
 	mainBPane.setStyle("-fx-focus-color: transparent;");
 	stackPane.setStyle("-fx-focus-color: transparent;");
+        
 	//This sets the initial value of the scrollbars, .5 for 50% aka the middle
 	scrollPane.setHvalue(middle);
 	scrollPane.setVvalue(middle);
 	
-	
-        mainBPane.setCenter(scrollPane);
 	mainBPane.setTop(vbox);
+        mainBPane.setCenter(stackPaneCenterer);
+	
 	mainBPane.setLeft(toolSelectionGrid);
 	
 	//Styling
