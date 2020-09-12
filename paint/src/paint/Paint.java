@@ -66,6 +66,7 @@ import javax.imageio.ImageIO;
 public class Paint extends Application {
     
     //Setting up Vars
+    private Scene scene;
     private File file;
     private Image image;
     private BorderPane mainBPane;
@@ -96,6 +97,7 @@ public class Paint extends Application {
     private Ellipse oval = new Ellipse();
     private double dx;
     private double dy;
+    private boolean regular = false;
     
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty();
@@ -508,6 +510,9 @@ public class Paint extends Application {
         
 	//Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
+
+        
+        
 	gc.setLineCap( StrokeLineCap.ROUND );
 	rect.setVisible(false);
 	line.setVisible(false);
@@ -594,7 +599,9 @@ public class Paint extends Application {
 			    rect.setTranslateX(0);
 			    rect.setWidth(dx);
 			}
+                        
 			dy = event.getY() - initialY;
+                        if (regular) dy = dx;
 			if (dy < 0){
 			    rect.setTranslateY(dy);
 			    rect.setHeight(-dy);
@@ -614,6 +621,7 @@ public class Paint extends Application {
 			    rect.setWidth(dx);
 			}
 			dy = event.getY() - initialY;
+                        if(regular) dy = dx;
 			if (dy < 0){
 			    rect.setTranslateY(dy);
 			    rect.setHeight(-dy);
@@ -663,7 +671,9 @@ public class Paint extends Application {
 			    _x = rect.getX();
 			    _w = dx;
 			}
+                        
 			dy = event.getY() - initialY;
+                        if(regular) dy = dx;
 			if (dy < 0){
 			    _y = rect.getY() + dy;
 			    _h = -dy;
@@ -690,6 +700,7 @@ public class Paint extends Application {
 			    _w = dx;
 			}
 			dy = event.getY() - initialY;
+                        if(regular) dy = dx;
 			if (dy < 0){
 			    _y = rect.getY() + dy;
 			    _h = -dy;
@@ -747,7 +758,19 @@ public class Paint extends Application {
 	
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
-        Scene scene = new Scene(mainBPane, .9*width, .9*height);
+        scene = new Scene(mainBPane, .9*width, .9*height);
+        scene.setOnKeyPressed(ke -> {
+            if (ke.getCode().toString().equals("SHIFT")) {
+                regular = true;
+            }
+            
+        });
+        scene.setOnKeyReleased(ke -> {
+            if (ke.getCode().toString().equals("SHIFT")) {
+                regular = false;
+            }
+            
+        });
         stage.setMaximized(true);
 	
         //Setting title to the Stage to be the filename
