@@ -1,6 +1,7 @@
 package paint;
 
 import java.io.File;
+import java.util.Optional;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.beans.property.SimpleStringProperty;
@@ -22,12 +23,15 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -40,6 +44,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
@@ -47,6 +52,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 import javax.imageio.ImageIO;
 
 /**
@@ -78,6 +84,7 @@ public class Paint extends Application {
     //creating a line off canvas for preview
     private Line line = new Line();
     private Rectangle rect = new Rectangle();
+    private Ellipse oval = new Ellipse();
     private double dx;
     private double dy;
     
@@ -194,7 +201,7 @@ public class Paint extends Application {
 		System.exit(0);
 	    }
 	});
-	save.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
+	exit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
 	
 	menuFile.getItems().addAll(open,save,saveas,exit);
 	
@@ -202,9 +209,53 @@ public class Paint extends Application {
 	
         // --- Menu Edit
         Menu menuEdit = new Menu("_Edit");
-	//does nothing
-	MenuItem nothing1 = new MenuItem("N/A");
-	menuEdit.getItems().add(nothing1);
+	MenuItem resize = new MenuItem("Resize canvas");
+	
+	resize.setOnAction(new EventHandler<ActionEvent>() {
+	    public void handle(ActionEvent t) {
+		Dialog<Pair<String, String>> dialog = new Dialog<>();
+		dialog.setTitle("TestName");
+
+		// Set the button types.
+		ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
+		dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+			GridPane gridPane = new GridPane();
+		gridPane.setHgap(10);
+		gridPane.setVgap(10);
+		gridPane.setPadding(new Insets(20, 150, 10, 10));
+
+		TextField from = new TextField();
+		from.setPromptText("From");
+		TextField to = new TextField();
+		to.setPromptText("To");
+
+		gridPane.add(from, 0, 0);
+		gridPane.add(new Label("To:"), 1, 0);
+		gridPane.add(to, 2, 0);
+
+		dialog.getDialogPane().setContent(gridPane);
+
+		// Request focus on the username field by default.
+		Platform.runLater(() -> from.requestFocus());
+
+		// Convert the result to a username-password-pair when the login button is clicked.
+		dialog.setResultConverter(dialogButton -> {
+		    if (dialogButton == loginButtonType) {
+			return new Pair<>(from.getText(), to.getText());
+		    }
+		    return null;
+		});
+
+		Optional<Pair<String, String>> result = dialog.showAndWait();
+
+		result.ifPresent(pair -> {
+		    System.out.println("From=" + pair.getKey() + ", To=" + pair.getValue());
+		});
+	    }
+	});
+	
+	menuEdit.getItems().add(resize);
 	
 	
         // --- Menu View
@@ -250,7 +301,7 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 1);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 1, 1);
-	
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"), 1, 2);
 	
 	
 	//slider
@@ -282,14 +333,27 @@ public class Paint extends Application {
         fillColorPicker.setValue(Color.BLACK);
 	
 	CheckBox fillCheckBox = new CheckBox("Filled");
-	
-	fillColorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
-                if (fillCheckBox.isSelected()) {
-		    rect.setFill(newvalue);
-		    gc.setFill(newvalue);
+	fillCheckBox.selectedProperty().addListener((observable, oldvalue, filled) -> {
+		if (fillCheckBox.isSelected()) {
+		    rect.setFill(fillColorPicker.getValue());
+		    oval.setFill(fillColorPicker.getValue());
+		    gc.setFill(fillColorPicker.getValue());
 		} else {
 		    rect.setFill(null);
 		    gc.setFill(null);
+		    
+		}
+        });
+	fillColorPicker.valueProperty().addListener((observable, oldvalue, newvalue) -> {
+                if (fillCheckBox.isSelected()) {
+		    rect.setFill(newvalue);
+		    oval.setFill(newvalue);
+		    gc.setFill(newvalue);
+		} else {
+		    rect.setFill(null);
+		    oval.setFill(null);
+		    gc.setFill(null);
+		    
 		}
         });
 	
@@ -353,7 +417,26 @@ public class Paint extends Application {
 			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
 			toolSettingsGrid.add(fillColorPicker,5,1);
 			
-		    break;
+			break;
+		    case "circle":
+			lineWLabel = new Text("OutLine Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("OutLine Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
+			
+			toolSettingsGrid.add(fillCheckBox,4,1);
+			
+			ColorLabel = new Text("Fill Color");
+			toolSettingsGrid.add(ColorLabel, 5, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(fillColorPicker,5,1);
+			
+			break;
 
 		}
             }
@@ -394,6 +477,22 @@ public class Paint extends Application {
 			line.setStrokeLineCap(StrokeLineCap.ROUND);
 			break;
 		    case "rectangle":
+			rect.setVisible(true);
+			rect.setX(event.getX());
+			rect.setY(event.getY());
+			rect.setWidth(0);
+			rect.setHeight(0);
+			rect.setStrokeWidth(lineWidthSlider.getValue());
+			rect.setStroke(colorPicker.getValue());
+			break;
+		    case "circle":
+			oval.setVisible(false);
+			oval.setCenterX(0);
+			oval.setCenterY(0);
+			oval.setRadiusX(event.getY());
+			oval.setRadiusY(event.getY());
+			oval.setStrokeWidth(lineWidthSlider.getValue());
+			oval.setStroke(colorPicker.getValue());
 			rect.setVisible(true);
 			rect.setX(event.getX());
 			rect.setY(event.getY());
@@ -443,6 +542,26 @@ public class Paint extends Application {
 			    rect.setTranslateY(0);
 			    rect.setHeight(dy);
 			}
+			break;
+			
+		    case "circle":
+			dx = event.getX() - initialX;
+			if (dx < 0){
+			    rect.setTranslateX(dx);
+			    rect.setWidth(-dx);
+			} else {
+			    rect.setTranslateX(0);
+			    rect.setWidth(dx);
+			}
+			dy = event.getY() - initialY;
+			if (dy < 0){
+			    rect.setTranslateY(dy);
+			    rect.setHeight(-dy);
+			} else {
+			    rect.setTranslateY(0);
+			    rect.setHeight(dy);
+			}
+			break;
 			
 		}
 		
@@ -455,7 +574,10 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		
+		double _x;
+		double _y;
+		double _h;
+		double _w;
 		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
@@ -472,11 +594,6 @@ public class Paint extends Application {
 			break;
 			
 		    case "rectangle":
-			double _x;
-			double _y;
-			double _h;
-			double _w;
-			
 			dx = event.getX() - initialX;
 			if (dx < 0){
 			    _x = rect.getX() + dx;
@@ -494,9 +611,38 @@ public class Paint extends Application {
 			    _y = rect.getY();
 			    _h = dy;
 			}
-			
+			if (fillCheckBox.isSelected()){
+			    gc.fillRect(_x,_y,_w,_h);
+			} 
 			gc.strokeRect(_x,_y,_w,_h);
 			rect.setVisible(false);
+			break;
+			
+			
+		    case "circle":
+			dx = event.getX() - initialX;
+			if (dx < 0){
+			    _x = rect.getX() + dx;
+			    _w = -dx;
+			} else {
+			    rect.setTranslateX(0);
+			    _x = rect.getX();
+			    _w = dx;
+			}
+			dy = event.getY() - initialY;
+			if (dy < 0){
+			    _y = rect.getY() + dy;
+			    _h = -dy;
+			} else {
+			    _y = rect.getY();
+			    _h = dy;
+			}
+			if (fillCheckBox.isSelected()){
+			    gc.fillOval(_x,_y,_w,_h);
+			} 
+			gc.strokeOval(_x,_y,_w,_h);
+			rect.setVisible(false);
+			oval.setVisible(false);
 			break;
 		}
 		
@@ -514,7 +660,7 @@ public class Paint extends Application {
 	//setting up scrolling for the canvas
 	//its a stackpane wrapped in a scrollpane so that it stays centered
 	
-	Group group = new Group(canvas,line,rect);
+	Group group = new Group(canvas,line,rect,oval);
 	
 	StackPane stackp = new StackPane(group);
 	ScrollPane scrollPane = new ScrollPane(stackp);
