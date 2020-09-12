@@ -2,8 +2,10 @@ package paint;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.Stack;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
@@ -13,6 +15,7 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -21,6 +24,8 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Dialog;
@@ -68,6 +73,10 @@ public class Paint extends Application {
     private Canvas canvas = new Canvas(1,1);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
     
+    private double zoomStartVal = 5;
+    private double zoomScale = zoomStartVal;
+    StackPane stackPane;
+    
     private double middle = .5; //this is for middle of scroll wheel
     
     //these are the values Im using for the line width controller. 
@@ -89,7 +98,22 @@ public class Paint extends Application {
     private double dy;
     
     private double btnSize = 25;
-    private StringProperty toolStringProperty = new SimpleStringProperty() ;
+    private StringProperty toolStringProperty = new SimpleStringProperty();
+    
+    
+    private Stack<WritableImage> undoStack = new Stack<>();;
+    
+    public void save(){
+        WritableImage img = canvas.snapshot(null,null);
+        
+        undoStack.add(img);
+    }
+    public void undo(){
+        if (!undoStack.isEmpty()){
+        gc.drawImage(undoStack.pop(),0,0);
+        }
+    }
+    
     
     public static double clamp(double val, double min, double max) {
 	return Math.max(min, Math.min(max, val));
@@ -194,6 +218,17 @@ public class Paint extends Application {
 	});
 	saveas.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN,KeyCombination.SHIFT_DOWN));
 	
+        
+	//undo
+	MenuItem undo = new MenuItem("undo");
+	undo.setOnAction(new EventHandler<ActionEvent>() { 
+        public void handle(ActionEvent t) {
+            undo();
+            }
+        
+        });
+        undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+        
 	//Exit
 	MenuItem exit = new MenuItem("Exit");
 	exit.setOnAction(new EventHandler<ActionEvent>() {
@@ -203,7 +238,7 @@ public class Paint extends Application {
 	});
 	exit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
 	
-	menuFile.getItems().addAll(open,save,saveas,exit);
+	menuFile.getItems().addAll(open,save,saveas,undo,exit);
 	
 	
 	
@@ -220,7 +255,7 @@ public class Paint extends Application {
 		ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
 		dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
 
-			GridPane gridPane = new GridPane();
+                GridPane gridPane = new GridPane();
 		gridPane.setHgap(10);
 		gridPane.setVgap(10);
 		gridPane.setPadding(new Insets(20, 150, 10, 10));
@@ -251,17 +286,42 @@ public class Paint extends Application {
 
 		result.ifPresent(pair -> {
 		    System.out.println("From=" + pair.getKey() + ", To=" + pair.getValue());
+                    canvas.setWidth(Double.parseDouble(pair.getKey()));
+                    canvas.setHeight(Double.parseDouble(pair.getValue()));
 		});
 	    }
 	});
+        resize.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN));
 	
 	menuEdit.getItems().add(resize);
 	
 	
         // --- Menu View
         Menu menuView = new Menu("_View");
-	MenuItem nothing2 = new MenuItem("N/A");
-	menuView.getItems().add(nothing2);
+	MenuItem zoomIn = new MenuItem("Zoom In");
+        zoomIn.setOnAction(new EventHandler<ActionEvent>() {
+	    public void handle(ActionEvent t) {
+                zoomScale++;
+                zoomScale = Math.max(1, zoomScale);
+                stackPane.setScaleX(zoomScale/zoomStartVal);
+                stackPane.setScaleY(zoomScale/zoomStartVal);
+            }
+        });
+        zoomIn.setAccelerator(new KeyCodeCombination(KeyCode.EQUALS, KeyCombination.CONTROL_DOWN));
+        
+        MenuItem zoomOut = new MenuItem("Zoom Out");
+        zoomOut.setOnAction(new EventHandler<ActionEvent>() {
+	    public void handle(ActionEvent t) {
+                zoomScale--;
+                zoomScale = Math.max(1, zoomScale);
+                
+                stackPane.setScaleX(zoomScale/zoomStartVal);
+                stackPane.setScaleY(zoomScale/zoomStartVal);
+            }
+        });
+        zoomOut.setAccelerator(new KeyCodeCombination(KeyCode.MINUS, KeyCombination.CONTROL_DOWN));
+        
+	menuView.getItems().addAll(zoomIn,zoomOut);
 	
 	// --- Menu Help
         Menu menuHelp = new Menu("_Help");
@@ -444,9 +504,9 @@ public class Paint extends Application {
 	
 	//adding all top menu elements
 	vbox.getChildren().addAll(menuBar,toolSettingsGrid);
-        mainBPane.setTop(vbox);
         
-	//------------- Drawing
+        
+	//Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	gc.setLineCap( StrokeLineCap.ROUND );
 	rect.setVisible(false);
@@ -645,7 +705,7 @@ public class Paint extends Application {
 			oval.setVisible(false);
 			break;
 		}
-		
+		save();
 	    }
 	});
 	
@@ -661,31 +721,29 @@ public class Paint extends Application {
 	//its a stackpane wrapped in a scrollpane so that it stays centered
 	
 	Group group = new Group(canvas,line,rect,oval);
-	
-	StackPane stackp = new StackPane(group);
-	ScrollPane scrollPane = new ScrollPane(stackp);
+	stackPane = new StackPane(group);
+	ScrollPane scrollPane = new ScrollPane(stackPane);
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
 	scrollPane.setStyle("-fx-focus-color: transparent;");
 	mainBPane.setStyle("-fx-focus-color: transparent;");
-	stackp.setStyle("-fx-focus-color: transparent;");
+	stackPane.setStyle("-fx-focus-color: transparent;");
 	//This sets the initial value of the scrollbars, .5 for 50% aka the middle
 	scrollPane.setHvalue(middle);
 	scrollPane.setVvalue(middle);
 	
 	
-	
-	
         mainBPane.setCenter(scrollPane);
-	
+	mainBPane.setTop(vbox);
 	mainBPane.setLeft(toolSelectionGrid);
 	
 	//Styling
+        group.setStyle("-fx-background-color: #FFFFFF;");
 	toolSelectionGrid.setStyle("-fx-background-color: #061A32;");
 	vbox.setStyle("-fx-background-color: #CDD7D6;");
 	scrollPane.setStyle("-fx-background-color: #102542;");
 	mainBPane.setStyle("-fx-background-color: #102542;");
-	stackp.setStyle("-fx-background-color: #102542;");
+	stackPane.setStyle("-fx-background-color: #102542;");
 	
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
@@ -697,6 +755,7 @@ public class Paint extends Application {
         stage.setScene(scene);
 	
         //Displaying the contents of the stage 
+        save();
         stage.show(); 
     }
 
