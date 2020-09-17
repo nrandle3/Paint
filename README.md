@@ -1,5 +1,6 @@
 # Paint
  CS-250 Paint Project
+ Hello world
 # links
 -------
 Git
