@@ -1,6 +1,7 @@
 package paint;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Stack;
 import javafx.application.Application;
@@ -60,9 +61,7 @@ import javafx.stage.Stage;
 import javafx.util.Pair;
 import javax.imageio.ImageIO;
 
-/**
- * @author nrand
- */
+
 public class Paint extends Application {
     
     //Setting up Vars
@@ -93,7 +92,11 @@ public class Paint extends Application {
     
     //creating a line off canvas for preview
     private Line line = new Line();
+    
+    //TODO: add clipping (?) So the pane doesn't go off into infinity if you move the rectangle/oval off canvas
     private Rectangle rect = new Rectangle();
+    
+    //TODO: Fix Elipse broken mess
     private Ellipse oval = new Ellipse();
     private double dx;
     private double dy;
@@ -142,6 +145,7 @@ public class Paint extends Application {
 	btn.setPrefSize(btnSize, btnSize);
 	btn.setGraphic(view);
 	btn.setOnAction(new EventHandler() {
+	    @Override
             public void handle(Event t) {
                 toolStringProperty.set(toolName);               
             }
@@ -197,13 +201,14 @@ public class Paint extends Application {
 	//save
 	MenuItem save = new MenuItem("Save");
 	save.setOnAction(new EventHandler<ActionEvent>() {
+	    @Override
 	    public void handle(ActionEvent t) {
 		if (file != null) {
 		    try {
 			WritableImage im = canvas.snapshot(null, null);
 			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
-		    } catch (Exception ex) {
+		    } catch (IOException ex) {
 			System.out.println(ex.getMessage());
 		    }
 		}
@@ -214,6 +219,7 @@ public class Paint extends Application {
 	//saveas
 	MenuItem saveas = new MenuItem("Save as");
 	saveas.setOnAction(new EventHandler<ActionEvent>() {
+	    @Override
 	    public void handle(ActionEvent t) {
 		FileChooser fileChooser = filePickerSetup("Save Image File");
 		file = fileChooser.showSaveDialog(stage);
@@ -222,7 +228,7 @@ public class Paint extends Application {
 			WritableImage im = canvas.snapshot(null, null);
 			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
-		    } catch (Exception ex) {
+		    } catch (IOException ex) {
 			System.out.println(ex.getMessage());
 		    }
 		}
@@ -411,6 +417,7 @@ public class Paint extends Application {
 		    gc.setFill(fillColorPicker.getValue());
 		} else {
 		    rect.setFill(null);
+		    oval.setFill(null);
 		    gc.setFill(null);
 		    
 		}
@@ -522,7 +529,10 @@ public class Paint extends Application {
 
         
         
-	gc.setLineCap( StrokeLineCap.ROUND );
+	gc.setLineCap(StrokeLineCap.ROUND);
+	
+	rect.setFill(null);
+	oval.setFill(null);
 	rect.setVisible(false);
 	line.setVisible(false);
 	rect.setFill(null);
@@ -556,24 +566,34 @@ public class Paint extends Application {
 			rect.setY(event.getY());
 			rect.setWidth(0);
 			rect.setHeight(0);
+			rect.setTranslateX(0);
+			rect.setTranslateY(0);
 			rect.setStrokeWidth(lineWidthSlider.getValue());
 			rect.setStroke(colorPicker.getValue());
+			
+			
 			break;
 		    case "circle":
-			oval.setVisible(false);
-			oval.setCenterX(0);
-			oval.setCenterY(0);
-			oval.setRadiusX(event.getY());
-			oval.setRadiusY(event.getY());
+			oval.setVisible(true);
+			oval.setTranslateX(0);
+			oval.setTranslateY(0);
+			oval.setCenterX(event.getX());
+			oval.setCenterY(event.getY());
+			oval.setRadiusX(0);
+			oval.setRadiusY(0);
 			oval.setStrokeWidth(lineWidthSlider.getValue());
 			oval.setStroke(colorPicker.getValue());
-			rect.setVisible(true);
+			
+			rect.setTranslateX(0);
+			rect.setTranslateY(0);
 			rect.setX(event.getX());
 			rect.setY(event.getY());
 			rect.setWidth(0);
 			rect.setHeight(0);
 			rect.setStrokeWidth(lineWidthSlider.getValue());
 			rect.setStroke(colorPicker.getValue());
+			
+			
 			break;
 		}
 	    }
@@ -583,6 +603,7 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
+		
 		
 		switch(toolStringProperty.get()){
 		    case "pencil":
@@ -623,14 +644,42 @@ public class Paint extends Application {
 		    case "circle":
 			dx = event.getX() - initialX;
 			if (dx < 0){
+			    oval.setTranslateX(dx/2);
+			    
+			    oval.setCenterX((event.getX() + initialX)/2);
+			    
+			    oval.setRadiusX(Math.abs(dx / 2));
+			    
+			} else {
+			    oval.setTranslateX(0);
+			    
+			    oval.setCenterX((event.getX() + initialX) / 2);
+			    
+			    oval.setRadiusX(Math.abs((event.getX() - initialX) / 2));
+			    
+			}
+			dy = event.getY() - initialY;
+                        if(regular) dy = dx;
+			if (dy < 0){
+			    
+			    
+			} else {
+			    oval.setCenterY((event.getY() + initialY) / 2);
+			    oval.setRadiusY(Math.abs((event.getY() - initialY) / 2));
+			}
+			
+			//rectangle thats kept track for the actual drawing
+			dx = event.getX() - initialX;
+			if (dx < 0){
 			    rect.setTranslateX(dx);
 			    rect.setWidth(-dx);
 			} else {
 			    rect.setTranslateX(0);
 			    rect.setWidth(dx);
 			}
+                        
 			dy = event.getY() - initialY;
-                        if(regular) dy = dx;
+                        if (regular) dy = dx;
 			if (dy < 0){
 			    rect.setTranslateY(dy);
 			    rect.setHeight(-dy);
@@ -638,12 +687,22 @@ public class Paint extends Application {
 			    rect.setTranslateY(0);
 			    rect.setHeight(dy);
 			}
+			
+			
+			
 			break;
 			
 		}
 		
 		prevX = event.getX();
 		prevY = event.getY();
+		
+		System.out.println("Initial: " + Double.toString(initialX));
+		System.out.println("MouseX: " + Double.toString(event.getX()));
+		System.out.println("OvalCenterX: " + Double.toString(oval.getCenterX()));
+		
+		
+		
 	    }
 	});
 
@@ -721,6 +780,9 @@ public class Paint extends Application {
 			    gc.fillOval(_x,_y,_w,_h);
 			} 
 			gc.strokeOval(_x,_y,_w,_h);
+			
+			
+			
 			rect.setVisible(false);
 			oval.setVisible(false);
 			break;
