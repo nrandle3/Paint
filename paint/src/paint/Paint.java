@@ -642,31 +642,17 @@ public class Paint extends Application {
 			break;
 			
 		    case "circle":
-			dx = event.getX() - initialX;
-			if (dx < 0){
-			    oval.setTranslateX(dx/2);
-			    
-			    oval.setCenterX((event.getX() + initialX)/2);
-			    
-			    oval.setRadiusX(Math.abs(dx / 2));
-			    
-			} else {
-			    oval.setTranslateX(0);
-			    
-			    oval.setCenterX((event.getX() + initialX) / 2);
-			    
-			    oval.setRadiusX(Math.abs((event.getX() - initialX) / 2));
-			    
-			}
+			
+			oval.setCenterX((event.getX() + initialX) / 2);
+			oval.setRadiusX(Math.abs((event.getX() - initialX) / 2));
+			
 			dy = event.getY() - initialY;
-                        if(regular) dy = dx;
-			if (dy < 0){
-			    
-			    
-			} else {
-			    oval.setCenterY((event.getY() + initialY) / 2);
-			    oval.setRadiusY(Math.abs((event.getY() - initialY) / 2));
-			}
+                        
+			
+			oval.setCenterY((event.getY() + initialY) / 2);
+			oval.setRadiusY(Math.abs((event.getY() - initialY) / 2));
+			
+			if(regular) oval.setRadiusY(oval.getRadiusX());
 			
 			//rectangle thats kept track for the actual drawing
 			dx = event.getX() - initialX;
