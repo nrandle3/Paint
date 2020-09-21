@@ -50,6 +50,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
@@ -113,7 +114,7 @@ public class Paint extends Application {
     private Ellipse oval = new Ellipse();
     private double dx;
     private double dy;
-    private boolean regular = false;
+    private boolean shift = false;
     
     private boolean typing = false;
     double textX;
@@ -719,7 +720,7 @@ public class Paint extends Application {
 			
 			
 			dy = event.getY() - initialY;
-                        if (regular) dy = dx;
+                        if (shift) dy = dx;
 			if (dy < 0){
 			    rect.setTranslateY(dy);
 			    rect.setHeight(-dy);
@@ -741,7 +742,7 @@ public class Paint extends Application {
 			oval.setCenterY((event.getY() + initialY) / 2);
 			oval.setRadiusY(Math.abs((event.getY() - initialY) / 2));
 			
-			if(regular) oval.setRadiusY(oval.getRadiusX());
+			if(shift) oval.setRadiusY(oval.getRadiusX());
 			
 			//rectangle thats kept track for the actual drawing
 			dx = event.getX() - initialX;
@@ -754,7 +755,7 @@ public class Paint extends Application {
 			}
                         
 			dy = event.getY() - initialY;
-                        if (regular) dy = dx;
+                        if (shift) dy = dx;
 			if (dy < 0){
 			    rect.setTranslateY(dy);
 			    rect.setHeight(-dy);
@@ -815,7 +816,7 @@ public class Paint extends Application {
 			
                         
 			dy = event.getY() - initialY;
-                        if(regular) dy = dx;
+                        if(shift) dy = dx;
 			if (dy < 0){
 			    _y = rect.getY() + dy;
 			    _h = -dy;
@@ -842,7 +843,7 @@ public class Paint extends Application {
 			    _w = dx;
 			}
 			dy = event.getY() - initialY;
-                        if(regular) dy = dx;
+                        if(shift) dy = dx;
 			if (dy < 0){
 			    _y = rect.getY() + dy;
 			    _h = -dy;
@@ -931,34 +932,56 @@ public class Paint extends Application {
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
         scene = new Scene(mainBPane, .9*width, .9*height);
-        scene.setOnKeyPressed(ke -> {
-            if (ke.getCode().toString().equals("SHIFT")) {
-                regular = true;
-            }
-	    
-	    if (ke.getCode().isLetterKey()) {
-		keyString = keyString + ke.getCode().toString();
-		if (typing){ //TODO: rework logic - if typing freeze scrolling + accept space and possibly newline
+	
+	
+	
+        scene.setOnKeyTyped(ke -> {
+	    if (typing){ 
+		
+		if (!ke.getCharacter().equals("")) keyString = (keyString + ke.getCharacter()).replaceAll("\\P{Print}", "");
+		
+		
+		
+		System.out.println(ke.getCharacter());
+
+		 //TODO: rework logic - if typing freeze scrolling + accept space and possibly newline
+		
+		ImageView imgview = new ImageView(preTextImage);
+		imgview.setFitWidth(canvas.getWidth());
+		imgview.setFitHeight(canvas.getHeight());
+		gc.drawImage(imgview.snapshot(null,null),0,0);
+
+		gc.setFill(fillColorPicker.getValue());
+		gc.setFont(new Font(fontChoice.getValue().toString(),Double.parseDouble(numberField.getText())));
+		//TODO: add outline + ability to type space 
+		gc.fillText(keyString, textX, textY);
 		    
-		    ImageView imgview = new ImageView(preTextImage);
-		    imgview.setFitWidth(canvas.getWidth());
-		    imgview.setFitHeight(canvas.getHeight());
-		    gc.drawImage(imgview.snapshot(null,null),0,0);
 		    
-                    gc.setStroke(fillColorPicker.getValue());
-                    gc.setFont(new Font(fontChoice.getValue().toString(),Double.parseDouble(numberField.getText())));
-                    //TODO: add outline + ability to type space 
-		    gc.fillText(keyString, textX, textY);
-		    
-		    
-		}
+		
 	    }
             
         });
+	
+	scene.setOnKeyPressed(ke -> {
+            if (ke.getCode().toString().equals("SHIFT")) {
+                shift = true;
+            }
+	    if (ke.getCode() == KeyCode.BACK_SPACE ) keyString = keyString.substring(0,keyString.length()-1);
+	});
+	
+	scrollPane.setOnKeyPressed(event -> {
+            if(event.getCode() == KeyCode.SPACE ){
+		//keyString = keyString + " ";
+                event.consume();
+	    }
+		
+        });
+	
         scene.setOnKeyReleased(ke -> {
             if (ke.getCode().toString().equals("SHIFT")) {
-                regular = false;
+                shift = false;
             }
+	    
             
         });
         stage.setMaximized(true);
