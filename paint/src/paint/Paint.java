@@ -121,11 +121,14 @@ public class Paint extends Application {
     double textY;
     private Image preTextImage;
     
+    private double defaultFontSize = 22;
+    private double defaultPolygonSize = 3;
+    
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty();
     
-    private double[] xPoints = new double[3];
-    private double[] yPoints = new double[3];
+    private double[] xPoints = new double[50];
+    private double[] yPoints = new double[50];
     private int pointsCounter = 0; 
     
     private Stack<WritableImage> undoStack = new Stack<>();
@@ -463,7 +466,7 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 0, 2);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    1, 2);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 3);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),    1, 3);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","polygon"),1, 3);
 	
 	
 	
@@ -522,12 +525,14 @@ public class Paint extends Application {
         });
 	final ChoiceBox fontChoice = new ChoiceBox(FXCollections.observableList(new Font(1).getFamilies()));
 	final TextField numberField = new TextField();
+	
 	//tool settings grid changing
 	toolStringProperty.addListener(new ChangeListener<String>() {
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
 		toolSettingsGrid.getChildren().clear();
 		Text lineWLabel;
 		Text ColorLabel;
+		Text numberPoints;
 		switch(newValue){
 		    case "pencil":
 			lineWLabel = new Text("Line Width");
@@ -610,11 +615,12 @@ public class Paint extends Application {
                         
                         lineWLabel = new Text("Size");
 			toolSettingsGrid.add(lineWLabel, 4, 0, 1, 1);
-			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
                         
                         
                         numberField.setTextFormatter(new TextFormatter<>(new NumberStringConverter()));
                         numberField.setPrefWidth(btnSize*2);
+			numberField.setText(String.valueOf(defaultFontSize));
                         toolSettingsGrid.add(numberField,4,1,1,1);
                         
                         toolSettingsGrid.add(fontChoice,5,1,1,1);
@@ -627,7 +633,7 @@ public class Paint extends Application {
 			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
 			
 			break;
-		    case "triangle":
+		    case "polygon":
 			lineWLabel = new Text("OutLine Width");
 			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
 			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
@@ -644,6 +650,17 @@ public class Paint extends Application {
 			toolSettingsGrid.add(ColorLabel, 5, 0, 2, 1);
 			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
 			toolSettingsGrid.add(fillColorPicker,5,1);
+			
+			numberPoints = new Text("Number of Points");
+			toolSettingsGrid.add(numberPoints, 4, 0, 1, 1);
+			toolSettingsGrid.setHalignment(numberPoints, HPos.CENTER);
+			
+			numberField.setTextFormatter(new TextFormatter<>(new NumberStringConverter()));
+                        numberField.setPrefWidth(btnSize*2);
+			numberField.setText(String.valueOf(defaultPolygonSize));
+                        toolSettingsGrid.add(numberField,6,1,1,1);
+			
+			
 			break;
 		}
             }
@@ -741,7 +758,7 @@ public class Paint extends Application {
 			double size = lineWidthSlider.getValue();
 			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
 			break;
-		    case "triangle":
+		    case "polygon":
 			
 			xPoints[pointsCounter] = event.getX();
 			yPoints[pointsCounter] = event.getY();
@@ -934,14 +951,16 @@ public class Paint extends Application {
 			oval.setVisible(false);
 			break;
 		    case "triangle":
-			if (pointsCounter == 3){
+			if (pointsCounter == Double.parseDouble(numberField.getText())){
 			    if (fillCheckBox.isSelected()){
 				gc.fillPolygon(xPoints, yPoints, pointsCounter);
 			    }
 			    gc.strokePolygon(xPoints, yPoints, pointsCounter);
 			    pointsCounter = 0;
 			} else undoStack.pop();
+			System.out.println(pointsCounter);
 			break;
+			
 		    
 		}
 		
