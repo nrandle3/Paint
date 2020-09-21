@@ -167,11 +167,7 @@ public class Paint extends Application {
 	btn.setOnAction(new EventHandler() {
 	    @Override
             public void handle(Event t) {
-		if (toolStringProperty.get().equals(toolName)){
-		    toolStringProperty.set("");
-		} else {
-		    toolStringProperty.set(toolName);
-		}
+		toolStringProperty.set(toolName);
             }
         });
 	return btn;
@@ -193,8 +189,6 @@ public class Paint extends Application {
 	canvas.setHeight(image.getHeight());
 	canvas.setWidth(image.getWidth());
 	gc.drawImage(image,0,0);
-	
-	
 	
     }
     
@@ -556,6 +550,13 @@ public class Paint extends Application {
 			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
 			toolSettingsGrid.add(fillColorPicker,5,1);
 			
+			break;
+			
+		    case "text":
+			ColorLabel = new Text("Text Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
 			break;
 
 		}
