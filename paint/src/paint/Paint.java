@@ -15,8 +15,10 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -47,6 +49,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -76,7 +79,11 @@ public class Paint extends Application {
     private double zoomStartVal = 5;
     private double zoomScale = zoomStartVal;
     StackPane stackPane;
-    
+    Group group;
+    ScrollPane scrollPane;
+    Group drawingElementsGroup;
+    Rectangle clip;
+    String keyString = "";
     private double middle = .5; //this is for middle of scroll wheel
     
     //these are the values Im using for the line width controller. 
@@ -129,6 +136,19 @@ public class Paint extends Application {
         gc.drawImage(imgview.snapshot(null,null),0,0);
     }
     
+    public static void clipChildren(Region region, double arc) {
+
+        final Rectangle outputClip = new Rectangle();
+        outputClip.setArcWidth(arc);
+        outputClip.setArcHeight(arc);
+        region.setClip(outputClip);
+
+        region.layoutBoundsProperty().addListener((ov, oldValue, newValue) -> {
+            outputClip.setWidth(newValue.getWidth());
+            outputClip.setHeight(newValue.getHeight());
+        });        
+    }
+    
     
     public static double clamp(double val, double min, double max) {
 	return Math.max(min, Math.min(max, val));
@@ -169,6 +189,9 @@ public class Paint extends Application {
 	canvas.setHeight(image.getHeight());
 	canvas.setWidth(image.getWidth());
 	gc.drawImage(image,0,0);
+	
+	
+	
     }
     
     
@@ -194,6 +217,16 @@ public class Paint extends Application {
 		file = fileChooser.showOpenDialog(stage);
 		imageSetup(file);
 		stage.setTitle(file.toURI().toString());
+		
+		Bounds canvasBounds = canvas.getBoundsInParent();
+	
+		clip = new Rectangle(canvasBounds.getWidth(), canvasBounds.getHeight());
+
+		clip.setLayoutX(group.getLayoutX());
+		clip.setLayoutY(group.getLayoutY());
+
+		drawingElementsGroup.setClip(clip);
+		
 	    }
 	    
 	});
@@ -322,6 +355,8 @@ public class Paint extends Application {
                 zoomScale = Math.max(1, zoomScale);
                 stackPane.setScaleX(zoomScale/zoomStartVal);
                 stackPane.setScaleY(zoomScale/zoomStartVal);
+		scrollPane.setHvalue(middle);
+		scrollPane.setVvalue(middle);
             }
         });
         zoomIn.setAccelerator(new KeyCodeCombination(KeyCode.EQUALS, KeyCombination.CONTROL_DOWN));
@@ -334,6 +369,9 @@ public class Paint extends Application {
                 
                 stackPane.setScaleX(zoomScale/zoomStartVal);
                 stackPane.setScaleY(zoomScale/zoomStartVal);
+		
+		scrollPane.setHvalue(middle);
+		scrollPane.setVvalue(middle);
             }
         });
         zoomOut.setAccelerator(new KeyCodeCombination(KeyCode.MINUS, KeyCombination.CONTROL_DOWN));
@@ -604,7 +642,6 @@ public class Paint extends Application {
 	    @Override
 	    public void handle(MouseEvent event) {
 		
-		
 		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
@@ -630,6 +667,13 @@ public class Paint extends Application {
 			    rect.setWidth(dx);
 			}
                         
+//			if ((rect.getTranslateX() + rect.getX()) <= 0) {
+//			    rect.setTranslateX(-rect.getX());
+//			    rect.setWidth(rect.getX());
+//			}
+			
+			
+			
 			dy = event.getY() - initialY;
                         if (regular) dy = dx;
 			if (dy < 0){
@@ -639,6 +683,7 @@ public class Paint extends Application {
 			    rect.setTranslateY(0);
 			    rect.setHeight(dy);
 			}
+			
 			break;
 			
 		    case "circle":
@@ -683,9 +728,7 @@ public class Paint extends Application {
 		prevX = event.getX();
 		prevY = event.getY();
 		
-		System.out.println("Initial: " + Double.toString(initialX));
-		System.out.println("MouseX: " + Double.toString(event.getX()));
-		System.out.println("OvalCenterX: " + Double.toString(oval.getCenterX()));
+		
 		
 		
 		
@@ -725,6 +768,7 @@ public class Paint extends Application {
 			    _x = rect.getX();
 			    _w = dx;
 			}
+			
                         
 			dy = event.getY() - initialY;
                         if(regular) dy = dx;
@@ -788,10 +832,33 @@ public class Paint extends Application {
 	//setting up scrolling for the canvas
 	//its a stackpane wrapped in a scrollpane so that it stays centered
 	
-	Group group = new Group(canvas,line,rect,oval);
-	stackPane = new StackPane(group);
-        Group group2 = new Group(stackPane);
-	ScrollPane scrollPane = new ScrollPane(group2);
+	
+	
+	
+	Group canvasGroup = new Group(canvas);
+	drawingElementsGroup = new Group(line,rect,oval);
+	
+	
+	
+	Group containerGroup = new Group(canvasGroup,drawingElementsGroup);
+	
+	stackPane = new StackPane(containerGroup);
+	stackPane.setAlignment(Pos.CENTER);
+        BorderPane centeringBorderPane = new BorderPane(stackPane);
+	group = new Group(centeringBorderPane);
+	scrollPane = new ScrollPane(group);
+	stackPane.setMinSize(width, height);
+	
+	
+	Bounds canvasBounds = canvas.getBoundsInParent();
+	
+	clip = new Rectangle(canvasBounds.getWidth(), canvasBounds.getHeight());
+	
+	clip.setLayoutX(group.getLayoutX());
+	clip.setLayoutY(group.getLayoutY());
+	
+	drawingElementsGroup.setClip(clip);
+	
 	scrollPane.setFitToHeight(true);
 	scrollPane.setFitToWidth(true);
         StackPane stackPaneCenterer = new StackPane(scrollPane);
@@ -809,12 +876,13 @@ public class Paint extends Application {
 	mainBPane.setLeft(toolSelectionGrid);
 	
 	//Styling
-        group.setStyle("-fx-background-color: #FFFFFF;");
+        group.setStyle("-fx-background-color: #00FFFF;");
 	toolSelectionGrid.setStyle("-fx-background-color: #061A32;");
 	vbox.setStyle("-fx-background-color: #CDD7D6;");
 	scrollPane.setStyle("-fx-background-color: #102542;");
 	mainBPane.setStyle("-fx-background-color: #102542;");
 	stackPane.setStyle("-fx-background-color: #102542;");
+	centeringBorderPane.setStyle("-fx-background-color: #102542;");
 	
         //Creating a scene object, setting the width and height to 90% of the screen size
 	//(although I maximize the screen right after anyway)
@@ -823,6 +891,10 @@ public class Paint extends Application {
             if (ke.getCode().toString().equals("SHIFT")) {
                 regular = true;
             }
+	    
+	    if (ke.getCode().isLetterKey()) {
+		keyString = keyString + ke.getCode().toString();
+	    }
             
         });
         scene.setOnKeyReleased(ke -> {
