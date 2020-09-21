@@ -109,6 +109,11 @@ public class Paint extends Application {
     private double dy;
     private boolean regular = false;
     
+    private boolean typing = false;
+    double textX;
+    double textY;
+    private Image preTextImage;
+    
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty();
     
@@ -475,7 +480,6 @@ public class Paint extends Application {
 	//tool settings grid changing
 	toolStringProperty.addListener(new ChangeListener<String>() {
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                System.out.println("changed " + oldValue + "->" + newValue);
 		toolSettingsGrid.getChildren().clear();
 		Text lineWLabel;
 		Text ColorLabel;
@@ -557,6 +561,7 @@ public class Paint extends Application {
 			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
 			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
 			toolSettingsGrid.add(colorPicker,3,1);
+			
 			break;
 
 		}
@@ -585,6 +590,10 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
+		typing = false;
+		textX = event.getX();
+		textY = event.getY();
+		
 		prevX = event.getX();
 		prevY = event.getY();
 		initialX = event.getX();
@@ -635,9 +644,15 @@ public class Paint extends Application {
 			rect.setHeight(0);
 			rect.setStrokeWidth(lineWidthSlider.getValue());
 			rect.setStroke(colorPicker.getValue());
-			
-			
 			break;
+			
+		    case "text":
+			typing = true;
+			keyString = "";
+			save();
+		        preTextImage = undoStack.pop();
+			break;
+			
 		}
 	    }
 	});
@@ -899,6 +914,17 @@ public class Paint extends Application {
 	    
 	    if (ke.getCode().isLetterKey()) {
 		keyString = keyString + ke.getCode().toString();
+		if (typing){
+		    
+		    ImageView imgview = new ImageView(preTextImage);
+		    imgview.setFitWidth(canvas.getWidth());
+		    imgview.setFitHeight(canvas.getHeight());
+		    gc.drawImage(imgview.snapshot(null,null),0,0);
+		    
+		    gc.fillText(keyString, textX, textY);
+		    
+		    
+		}
 	    }
             
         });
