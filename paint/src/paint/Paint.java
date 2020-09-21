@@ -2,6 +2,7 @@ package paint;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Stack;
 import javafx.application.Application;
@@ -50,7 +51,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
@@ -124,6 +124,9 @@ public class Paint extends Application {
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty();
     
+    private double[] xPoints = new double[3];
+    private double[] yPoints = new double[3];
+    private int pointsCounter = 0; 
     
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
@@ -134,10 +137,14 @@ public class Paint extends Application {
         undoStack.add(img);
     }
     public void undo(){
+	if (redoStack.isEmpty()) redoStack.add(canvas.snapshot(null,null));
         if (!undoStack.isEmpty()){
+	    
+	    
 	    WritableImage undid = undoStack.pop();
 	    gc.drawImage(undid,0,0);
 	    redoStack.add(undid);
+	    
         }
     }
     public void redo(){
@@ -158,6 +165,8 @@ public class Paint extends Application {
         imgview.setFitHeight(y);
         gc.drawImage(imgview.snapshot(null,null),0,0);
     }
+    
+    
     
     public static void clipChildren(Region region, double arc) {
 
@@ -618,7 +627,24 @@ public class Paint extends Application {
 			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
 			
 			break;
-
+		    case "triangle":
+			lineWLabel = new Text("OutLine Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("OutLine Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
+			
+			toolSettingsGrid.add(fillCheckBox,4,1);
+			
+			ColorLabel = new Text("Fill Color");
+			toolSettingsGrid.add(ColorLabel, 5, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(fillColorPicker,5,1);
+			break;
 		}
             }
         });
@@ -645,6 +671,7 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
+		save();
 		typing = false;
 		textX = event.getX();
 		textY = event.getY();
@@ -713,6 +740,14 @@ public class Paint extends Application {
 		    case "eraser":
 			double size = lineWidthSlider.getValue();
 			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
+			break;
+		    case "triangle":
+			
+			xPoints[pointsCounter] = event.getX();
+			yPoints[pointsCounter] = event.getY();
+			pointsCounter++;
+			
+			
 			break;
 			
 		}
@@ -898,8 +933,18 @@ public class Paint extends Application {
 			rect.setVisible(false);
 			oval.setVisible(false);
 			break;
+		    case "triangle":
+			if (pointsCounter == 3){
+			    if (fillCheckBox.isSelected()){
+				gc.fillPolygon(xPoints, yPoints, pointsCounter);
+			    }
+			    gc.strokePolygon(xPoints, yPoints, pointsCounter);
+			    pointsCounter = 0;
+			} else undoStack.pop();
+			break;
+		    
 		}
-		save();
+		
 	    }
 	});
 	
