@@ -11,6 +11,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -30,6 +31,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -40,6 +42,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -57,11 +60,13 @@ import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Pair;
+import javafx.util.converter.NumberStringConverter;
 import javax.imageio.ImageIO;
 
 
@@ -72,18 +77,19 @@ public class Paint extends Application {
     private File file;
     private Image image;
     private BorderPane mainBPane;
+    private GridPane toolSelectionGrid;
     //1,1 is dummy var
     private Canvas canvas = new Canvas(1,1);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
     
     private double zoomStartVal = 5;
     private double zoomScale = zoomStartVal;
-    StackPane stackPane;
-    Group group;
-    ScrollPane scrollPane;
-    Group drawingElementsGroup;
-    Rectangle clip;
-    String keyString = "";
+    private StackPane stackPane;
+    private Group group;
+    private ScrollPane scrollPane;
+    private Group drawingElementsGroup;
+    private Rectangle clip;
+    private String keyString = "";
     private double middle = .5; //this is for middle of scroll wheel
     
     //these are the values Im using for the line width controller. 
@@ -166,13 +172,16 @@ public class Paint extends Application {
 	view.setFitHeight(btnSize);
 	view.setFitWidth(btnSize);
 	
-	Button btn = new Button();
+	Button  btn = new Button ();
 	btn.setPrefSize(btnSize, btnSize);
 	btn.setGraphic(view);
 	btn.setOnAction(new EventHandler() {
 	    @Override
             public void handle(Event t) {
 		toolStringProperty.set(toolName);
+                
+                
+                
             }
         });
 	return btn;
@@ -413,7 +422,7 @@ public class Paint extends Application {
 	
 	VBox vbox  = new VBox();
 	GridPane toolSettingsGrid = new GridPane();
-	GridPane toolSelectionGrid = new GridPane();
+	toolSelectionGrid = new GridPane();
 	
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil")   , 0, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
@@ -475,8 +484,8 @@ public class Paint extends Application {
 		    
 		}
         });
-	
-	
+	final ChoiceBox fontChoice = new ChoiceBox(FXCollections.observableList(new Font(1).getFamilies()));
+	final TextField numberField = new TextField();
 	//tool settings grid changing
 	toolStringProperty.addListener(new ChangeListener<String>() {
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
@@ -560,8 +569,20 @@ public class Paint extends Application {
 			ColorLabel = new Text("Text Color");
 			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
 			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
-			toolSettingsGrid.add(colorPicker,3,1);
-			
+                        toolSettingsGrid.add(fillColorPicker,3,1);
+                        
+                        
+                        lineWLabel = new Text("Size");
+			toolSettingsGrid.add(lineWLabel, 4, 0, 1, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+                        
+                        
+                        numberField.setTextFormatter(new TextFormatter<>(new NumberStringConverter()));
+                        numberField.setPrefWidth(btnSize*2);
+                        toolSettingsGrid.add(numberField,4,1,1,1);
+                        
+                        toolSettingsGrid.add(fontChoice,5,1,1,1);
+                        
 			break;
 
 		}
@@ -651,6 +672,9 @@ public class Paint extends Application {
 			keyString = "";
 			save();
 		        preTextImage = undoStack.pop();
+                        
+                        gc.setStroke(fillColorPicker.getValue());
+
 			break;
 			
 		}
@@ -914,13 +938,16 @@ public class Paint extends Application {
 	    
 	    if (ke.getCode().isLetterKey()) {
 		keyString = keyString + ke.getCode().toString();
-		if (typing){
+		if (typing){ //TODO: rework logic - if typing freeze scrolling + accept space and possibly newline
 		    
 		    ImageView imgview = new ImageView(preTextImage);
 		    imgview.setFitWidth(canvas.getWidth());
 		    imgview.setFitHeight(canvas.getHeight());
 		    gc.drawImage(imgview.snapshot(null,null),0,0);
 		    
+                    gc.setStroke(fillColorPicker.getValue());
+                    gc.setFont(new Font(fontChoice.getValue().toString(),Double.parseDouble(numberField.getText())));
+                    //TODO: add outline + ability to type space 
 		    gc.fillText(keyString, textX, textY);
 		    
 		    
