@@ -167,7 +167,11 @@ public class Paint extends Application {
 	btn.setOnAction(new EventHandler() {
 	    @Override
             public void handle(Event t) {
-                toolStringProperty.set(toolName);               
+		if (toolStringProperty.get().equals(toolName)){
+		    toolStringProperty.set("");
+		} else {
+		    toolStringProperty.set(toolName);
+		}
             }
         });
 	return btn;
@@ -416,8 +420,8 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 1);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 1, 1);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"), 1, 2);
-	
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    0, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        1, 2);
 	
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
