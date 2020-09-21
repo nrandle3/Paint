@@ -107,10 +107,10 @@ public class Paint extends Application {
     //creating a line off canvas for preview
     private Line line = new Line();
     
-    //TODO: add clipping (?) So the pane doesn't go off into infinity if you move the rectangle/oval off canvas
+    
     private Rectangle rect = new Rectangle();
     
-    //TODO: Fix Elipse broken mess
+
     private Ellipse oval = new Ellipse();
     private double dx;
     private double dy;
@@ -125,18 +125,29 @@ public class Paint extends Application {
     private StringProperty toolStringProperty = new SimpleStringProperty();
     
     
-    private Stack<WritableImage> undoStack = new Stack<>();;
+    private Stack<WritableImage> undoStack = new Stack<>();
+    private Stack<WritableImage> redoStack = new Stack<>();
     
     public void save(){
+	redoStack.clear();
         WritableImage img = canvas.snapshot(null,null);
-        
         undoStack.add(img);
     }
     public void undo(){
         if (!undoStack.isEmpty()){
-        gc.drawImage(undoStack.pop(),0,0);
+	    WritableImage undid = undoStack.pop();
+	    gc.drawImage(undid,0,0);
+	    redoStack.add(undid);
         }
     }
+    public void redo(){
+        if (!redoStack.isEmpty()){
+	    WritableImage redid = redoStack.pop();
+	    gc.drawImage(redid,0,0);
+	    undoStack.add(redid);
+        }
+    }
+    
     public void resize(double x, double y){
         save();
         canvas.setWidth(x);
@@ -292,6 +303,17 @@ public class Paint extends Application {
         
         });
         undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+	
+	MenuItem redo = new MenuItem("redo");
+	redo.setOnAction(new EventHandler<ActionEvent>() { 
+        public void handle(ActionEvent t) {
+            redo();
+            }
+        
+        });
+        redo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
+	
+	
         
 	//Exit
 	MenuItem exit = new MenuItem("Exit");
@@ -302,7 +324,7 @@ public class Paint extends Application {
 	});
 	exit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
 	
-	menuFile.getItems().addAll(open,save,saveas,undo,exit);
+	menuFile.getItems().addAll(open,save,saveas,undo,redo,exit);
 	
 	
 	
@@ -428,9 +450,13 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil")   , 0, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 1);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 1, 1);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    0, 2);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        1, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/eraser.png","eraser"),    1, 1);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 0, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    1, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 3);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),    1, 3);
+	
+	
 	
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -585,6 +611,13 @@ public class Paint extends Application {
                         toolSettingsGrid.add(fontChoice,5,1,1,1);
                         
 			break;
+		    case "eraser":
+			lineWLabel = new Text("Eraser Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			break;
 
 		}
             }
@@ -677,6 +710,10 @@ public class Paint extends Application {
                         gc.setStroke(fillColorPicker.getValue());
 
 			break;
+		    case "eraser":
+			double size = lineWidthSlider.getValue();
+			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
+			break;
 			
 		}
 	    }
@@ -712,10 +749,6 @@ public class Paint extends Application {
 			    rect.setWidth(dx);
 			}
                         
-//			if ((rect.getTranslateX() + rect.getX()) <= 0) {
-//			    rect.setTranslateX(-rect.getX());
-//			    rect.setWidth(rect.getX());
-//			}
 			
 			
 			
@@ -766,6 +799,10 @@ public class Paint extends Application {
 			
 			
 			
+			break;
+		    case "eraser":
+			double size = lineWidthSlider.getValue();
+			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
 			break;
 			
 		}
@@ -901,7 +938,9 @@ public class Paint extends Application {
 	
 	clip.setLayoutX(group.getLayoutX());
 	clip.setLayoutY(group.getLayoutY());
-	
+	clip.setFill(Color.WHITE);
+	clip.setVisible(true);
+	canvas.setStyle("-fx-background-color: #00FFFF;");
 	drawingElementsGroup.setClip(clip);
 	
 	scrollPane.setFitToHeight(true);
@@ -944,7 +983,7 @@ public class Paint extends Application {
 		
 		System.out.println(ke.getCharacter());
 
-		 //TODO: rework logic - if typing freeze scrolling + accept space and possibly newline
+		 
 		
 		ImageView imgview = new ImageView(preTextImage);
 		imgview.setFitWidth(canvas.getWidth());
@@ -953,7 +992,7 @@ public class Paint extends Application {
 
 		gc.setFill(fillColorPicker.getValue());
 		gc.setFont(new Font(fontChoice.getValue().toString(),Double.parseDouble(numberField.getText())));
-		//TODO: add outline + ability to type space 
+		
 		gc.fillText(keyString, textX, textY);
 		    
 		    
