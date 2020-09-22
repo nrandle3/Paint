@@ -144,6 +144,8 @@ public class Paint extends Application {
     private WritableImage selectionImg;
     private WritableImage preMoveImg;
     private Rectangle2D initialRect;
+    private boolean somethingSelected;
+    
     
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
@@ -861,7 +863,6 @@ public class Paint extends Application {
 		new EventHandler<MouseEvent>(){
 	    @Override
 	    public void handle(MouseEvent event) {
-		
 		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
@@ -963,6 +964,21 @@ public class Paint extends Application {
 			
 		    case "move":
 			
+			if (somethingSelected){
+			    
+			    gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+			    gc.drawImage(preMoveImg,0,0);
+			    
+			    gc.clearRect(
+				    initialRect.getMinX(), initialRect.getMinY(), 
+				    initialRect.getWidth(), initialRect.getHeight()
+			    );
+			    selectionRect.setX(event.getX());
+			    selectionRect.setY(event.getY());
+			    gc.drawImage(selectionImg, event.getX(), event.getY());
+			
+			
+			}
 			break;
 		}
 		
@@ -1083,12 +1099,10 @@ public class Paint extends Application {
 				selectionRect.getX()    ,selectionRect.getY(),
 				selectionRect.getWidth(),selectionRect.getHeight());
 			selectSnapParameters.setViewport(initialRect);
-			
-			
-			canvas.snapshot(sp, preMoveImg);
-			
-			
-			canvas.snapshot(selectSnapParameters, selectionImg);
+			selectSnapParameters.setFill(Color.TRANSPARENT);
+			somethingSelected = true;
+			preMoveImg = canvas.snapshot(sp, null);
+			selectionImg = canvas.snapshot(selectSnapParameters, null);
 			break;
 		}
 		
