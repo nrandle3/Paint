@@ -2,7 +2,6 @@ package paint;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Stack;
 import javafx.application.Application;
@@ -24,6 +23,7 @@ import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
@@ -59,6 +59,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.text.Font;
@@ -106,10 +107,10 @@ public class Paint extends Application {
     
     //creating a line off canvas for preview
     private Line line = new Line();
-    
+    SnapshotParameters sp = new SnapshotParameters();
     
     private Rectangle rect = new Rectangle();
-    
+    Polygon triangle = new Polygon();
 
     private Ellipse oval = new Ellipse();
     private double dx;
@@ -136,15 +137,17 @@ public class Paint extends Application {
     
     public void save(){
 	redoStack.clear();
-        WritableImage img = canvas.snapshot(null,null);
+        WritableImage img = canvas.snapshot(sp,null);
+	
         undoStack.add(img);
     }
     public void undo(){
-	if (redoStack.isEmpty()) redoStack.add(canvas.snapshot(null,null));
+	if (redoStack.isEmpty()) redoStack.add(canvas.snapshot(sp,null));
         if (!undoStack.isEmpty()){
 	    
 	    
 	    WritableImage undid = undoStack.pop();
+	    gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 	    gc.drawImage(undid,0,0);
 	    redoStack.add(undid);
 	    
@@ -153,6 +156,7 @@ public class Paint extends Application {
     public void redo(){
         if (!redoStack.isEmpty()){
 	    WritableImage redid = redoStack.pop();
+	    gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 	    gc.drawImage(redid,0,0);
 	    undoStack.add(redid);
         }
@@ -166,7 +170,7 @@ public class Paint extends Application {
         ImageView imgview = new ImageView(newCanvasimg);
         imgview.setFitWidth(x);
         imgview.setFitHeight(y);
-        gc.drawImage(imgview.snapshot(null,null),0,0);
+        gc.drawImage(imgview.snapshot(sp,null),0,0);
     }
     
     
@@ -239,7 +243,7 @@ public class Paint extends Application {
 	//coondensed all the fileChooser stuff into this func
         FileChooser fileChooser = filePickerSetup("Open Image File");
 	file = fileChooser.showOpenDialog(stage);
-	
+	sp.setFill(Color.TRANSPARENT);
         //Creating an image 
         MenuBar menuBar = new MenuBar();
         // --- Menu File
@@ -274,7 +278,7 @@ public class Paint extends Application {
 	    public void handle(ActionEvent t) {
 		if (file != null) {
 		    try {
-			WritableImage im = canvas.snapshot(null, null);
+			WritableImage im = canvas.snapshot(sp, null);
 			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
 		    } catch (IOException ex) {
@@ -294,7 +298,7 @@ public class Paint extends Application {
 		file = fileChooser.showSaveDialog(stage);
 		if (file != null) {
 		    try {
-			WritableImage im = canvas.snapshot(null, null);
+			WritableImage im = canvas.snapshot(sp, null);
 			ImageIO.write(SwingFXUtils.fromFXImage(im,
 			    null), "png", file);
 		    } catch (IOException ex) {
@@ -466,8 +470,8 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 0, 2);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    1, 2);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 3);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","polygon"),1, 3);
-	
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/polygon.png","polygon"),  1, 3);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),0, 4);
 	
 	
 	//slider
@@ -480,7 +484,6 @@ public class Paint extends Application {
 		    gc.setLineWidth(new_val.doubleValue());
 		    line.setStrokeWidth(new_val.doubleValue());
 		    rect.setStrokeWidth(lineWidthSlider.getValue());
-		    
             }
         });
 	
@@ -504,10 +507,12 @@ public class Paint extends Application {
 		    rect.setFill(fillColorPicker.getValue());
 		    oval.setFill(fillColorPicker.getValue());
 		    gc.setFill(fillColorPicker.getValue());
+		    triangle.setFill(fillColorPicker.getValue());
 		} else {
 		    rect.setFill(null);
 		    oval.setFill(null);
 		    gc.setFill(null);
+		    triangle.setFill(null);
 		    
 		}
         });
@@ -516,10 +521,12 @@ public class Paint extends Application {
 		    rect.setFill(newvalue);
 		    oval.setFill(newvalue);
 		    gc.setFill(newvalue);
+		    triangle.setFill(newvalue);
 		} else {
 		    rect.setFill(null);
 		    oval.setFill(null);
 		    gc.setFill(null);
+		    triangle.setFill(null);
 		    
 		}
         });
@@ -662,6 +669,25 @@ public class Paint extends Application {
 			
 			
 			break;
+		    case "triangle":
+			lineWLabel = new Text("OutLine Width");
+			toolSettingsGrid.setHalignment(lineWLabel, HPos.CENTER);
+			toolSettingsGrid.add(lineWLabel,	     0,0,2,1);
+			toolSettingsGrid.add(lineWidthSlider,0,1,2,1);
+			
+			ColorLabel = new Text("OutLine Color");
+			toolSettingsGrid.add(ColorLabel, 2, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(colorPicker,3,1);
+			
+			toolSettingsGrid.add(fillCheckBox,4,1);
+			
+			ColorLabel = new Text("Fill Color");
+			toolSettingsGrid.add(ColorLabel, 5, 0, 2, 1);
+			toolSettingsGrid.setHalignment(ColorLabel, HPos.CENTER);
+			toolSettingsGrid.add(fillColorPicker,5,1);
+			
+			break;
 		}
             }
         });
@@ -672,8 +698,6 @@ public class Paint extends Application {
         
 	//Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-
-        
         
 	gc.setLineCap(StrokeLineCap.ROUND);
 	
@@ -682,7 +706,7 @@ public class Paint extends Application {
 	rect.setVisible(false);
 	line.setVisible(false);
 	rect.setFill(null);
-	
+	triangle.setVisible(false);
 
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
 		new EventHandler<MouseEvent>(){
@@ -702,6 +726,8 @@ public class Paint extends Application {
 		switch(toolStringProperty.get()){
 		    case "pencil":
 			break;
+			
+			
 		    case "line":
 			line.setVisible(true);
 			line.setStartX(event.getX());
@@ -711,6 +737,8 @@ public class Paint extends Application {
 			
 			line.setStrokeLineCap(StrokeLineCap.ROUND);
 			break;
+			
+			
 		    case "rectangle":
 			rect.setVisible(true);
 			rect.setX(event.getX());
@@ -721,9 +749,9 @@ public class Paint extends Application {
 			rect.setTranslateY(0);
 			rect.setStrokeWidth(lineWidthSlider.getValue());
 			rect.setStroke(colorPicker.getValue());
-			
-			
 			break;
+			
+			
 		    case "circle":
 			oval.setVisible(true);
 			oval.setTranslateX(0);
@@ -745,25 +773,38 @@ public class Paint extends Application {
 			rect.setStroke(colorPicker.getValue());
 			break;
 			
+			
 		    case "text":
 			typing = true;
 			keyString = "";
 			save();
 		        preTextImage = undoStack.pop();
-                        
                         gc.setStroke(fillColorPicker.getValue());
-
 			break;
+			
+			
 		    case "eraser":
 			double size = lineWidthSlider.getValue();
 			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
 			break;
-		    case "polygon":
 			
+			
+		    case "polygon":
 			xPoints[pointsCounter] = event.getX();
 			yPoints[pointsCounter] = event.getY();
 			pointsCounter++;
+			break;
+		    case "triangle":
+			triangle.setVisible(true);
+			triangle.getPoints().clear();
+			triangle.getPoints().addAll(
+				event.getX(),event.getY(),
+				event.getX(),event.getY(),
+				event.getX(),event.getY()
+			);
+			triangle.setStroke(colorPicker.getValue());
 			
+			triangle.setStrokeWidth(lineWidthSlider.getValue());
 			
 			break;
 			
@@ -787,7 +828,7 @@ public class Paint extends Application {
 			break;
 			
 		    case "dropper":
-			WritableImage snap = gc.getCanvas().snapshot(null, null);
+			WritableImage snap = gc.getCanvas().snapshot(sp, null);
 			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 			break;
 			
@@ -856,7 +897,15 @@ public class Paint extends Application {
 			double size = lineWidthSlider.getValue();
 			gc.clearRect(event.getX()-(size/2),event.getY()-(size/2),size,size);
 			break;
+		    case "triangle":
+			triangle.getPoints().clear();
+			triangle.getPoints().addAll(
+				initialX,initialY,
+				event.getX(),initialY,
+				(initialX+event.getX())/2, event.getY()
+			);
 			
+			break;
 		}
 		
 		prevX = event.getX();
@@ -888,7 +937,7 @@ public class Paint extends Application {
 			break;
 			
 		    case "dropper":
-			WritableImage snap = gc.getCanvas().snapshot(null, null);
+			WritableImage snap = gc.getCanvas().snapshot(sp, null);
 			colorPicker.setValue( snap.getPixelReader().getColor((int)event.getX(),(int)event.getY()) );
 			break;
 			
@@ -950,7 +999,7 @@ public class Paint extends Application {
 			rect.setVisible(false);
 			oval.setVisible(false);
 			break;
-		    case "triangle":
+		    case "polygon":
 			if (pointsCounter == Double.parseDouble(numberField.getText())){
 			    if (fillCheckBox.isSelected()){
 				gc.fillPolygon(xPoints, yPoints, pointsCounter);
@@ -961,7 +1010,14 @@ public class Paint extends Application {
 			System.out.println(pointsCounter);
 			break;
 			
-		    
+		    case "triangle":
+			triangle.setVisible(false);
+			double[] xPoints = {event.getX(), initialX,              (event.getX()+ initialX)/2};
+			double[] yPoints = {initialY,   initialY, event.getY()}     ;
+			if (fillCheckBox.isSelected()) gc.fillPolygon(xPoints,yPoints,3);
+			gc.strokePolygon(xPoints,yPoints,3);
+			rect.setVisible(false);
+			break;
 		}
 		
 	    }
@@ -982,7 +1038,7 @@ public class Paint extends Application {
 	
 	
 	Group canvasGroup = new Group(canvas);
-	drawingElementsGroup = new Group(line,rect,oval);
+	drawingElementsGroup = new Group(line,rect,oval,triangle);
 	
 	
 	
@@ -1003,8 +1059,6 @@ public class Paint extends Application {
 	clip.setLayoutX(group.getLayoutX());
 	clip.setLayoutY(group.getLayoutY());
 	clip.setFill(Color.WHITE);
-	clip.setVisible(true);
-	canvas.setStyle("-fx-background-color: #00FFFF;");
 	drawingElementsGroup.setClip(clip);
 	
 	scrollPane.setFitToHeight(true);
@@ -1052,7 +1106,7 @@ public class Paint extends Application {
 		ImageView imgview = new ImageView(preTextImage);
 		imgview.setFitWidth(canvas.getWidth());
 		imgview.setFitHeight(canvas.getHeight());
-		gc.drawImage(imgview.snapshot(null,null),0,0);
+		gc.drawImage(imgview.snapshot(sp,null),0,0);
 
 		gc.setFill(fillColorPicker.getValue());
 		gc.setFont(new Font(fontChoice.getValue().toString(),Double.parseDouble(numberField.getText())));
