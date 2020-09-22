@@ -11,6 +11,8 @@ import javafx.animation.Timeline;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
@@ -136,6 +138,8 @@ public class Paint extends Application {
     private double btnSize = 25;
     private StringProperty toolStringProperty = new SimpleStringProperty();
     
+    private BooleanProperty somethingSelected = new SimpleBooleanProperty();
+    
     private double[] xPoints = new double[50];
     private double[] yPoints = new double[50];
     private int pointsCounter = 0; 
@@ -143,9 +147,10 @@ public class Paint extends Application {
     private Rectangle selectionRect = new Rectangle();
     private WritableImage selectionImg;
     private WritableImage preMoveImg;
-    private Rectangle2D initialRect;
-    private boolean somethingSelected;
+    private Rectangle2D initialDraggedRect;
     
+    private Rectangle2D initialRect;
+    private boolean dragging = false;
     
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
@@ -556,6 +561,10 @@ public class Paint extends Application {
 		Text lineWLabel;
 		Text ColorLabel;
 		Text numberPoints;
+		System.out.println(newValue);
+		if (!("move".equals(newValue)) && !newValue.equals("select")){
+		    somethingSelected.set(false);
+		}
 		switch(newValue){
 		    case "pencil":
 			lineWLabel = new Text("Line Width");
@@ -714,6 +723,12 @@ public class Paint extends Application {
         
 	//Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
+	somethingSelected.addListener((observable, oldValue, newValue) -> {
+                selectionRect.setVisible(newValue);
+		
+            });
+	
+	
         
 	gc.setLineCap(StrokeLineCap.ROUND);
 	
@@ -855,6 +870,12 @@ public class Paint extends Application {
 			
 			break;
 			
+		    case "select":
+			selectionRect.setVisible(false);
+			somethingSelected.set(false);
+			dragging = false;
+			break;
+			
 		}
 	    }
 	});
@@ -960,22 +981,32 @@ public class Paint extends Application {
 			double height = event.getY() - initialY;
 			selectionRect.setWidth(width);
 			selectionRect.setHeight(height);
+			dragging = true;
 			break;
 			
 		    case "move":
 			
-			if (somethingSelected){
-			    
+			if ((somethingSelected.get()) &&( 
+				(dragging)|| 
+				    ((initialDraggedRect.getMinX() < event.getX()) &&
+				    (event.getX() < initialDraggedRect.getMaxX()) &&
+				    (initialDraggedRect.getMinY() < event.getY()) &&
+				    (event.getY() < initialDraggedRect.getMaxY()))
+				)
+			    ){
+			    dragging = true;
 			    gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 			    gc.drawImage(preMoveImg,0,0);
 			    
-			    gc.clearRect(
-				    initialRect.getMinX(), initialRect.getMinY(), 
+			    gc.clearRect(initialRect.getMinX(), initialRect.getMinY(), 
 				    initialRect.getWidth(), initialRect.getHeight()
 			    );
-			    selectionRect.setX(event.getX());
-			    selectionRect.setY(event.getY());
-			    gc.drawImage(selectionImg, event.getX(), event.getY());
+			    selectionRect.setX(event.getX() - (initialX-initialDraggedRect.getMinX()));
+			    selectionRect.setY(event.getY() - (initialY-initialDraggedRect.getMinY()));
+			    gc.drawImage(selectionImg, 
+				    event.getX() - (initialX-initialDraggedRect.getMinX()), 
+				    event.getY()- (initialY-initialDraggedRect.getMinY())
+			    );
 			
 			
 			}
@@ -1000,6 +1031,7 @@ public class Paint extends Application {
 		double _y;
 		double _h;
 		double _w;
+		
 		switch(toolStringProperty.get()){
 		    case "pencil":
 			gc.strokeLine(prevX, prevY, event.getX(), event.getY());
@@ -1093,16 +1125,30 @@ public class Paint extends Application {
 			rect.setVisible(false);
 			break;
 		    case "select":
-			SnapshotParameters selectSnapParameters = new SnapshotParameters();
-			
-			initialRect = new Rectangle2D(
+			if (dragging){
+			    SnapshotParameters selectSnapParameters = new SnapshotParameters();
+
+			    initialDraggedRect = new Rectangle2D(
+				    selectionRect.getX()    ,selectionRect.getY(),
+				    selectionRect.getWidth(),selectionRect.getHeight());
+			    initialRect = new Rectangle2D(
+				    selectionRect.getX()    ,selectionRect.getY(),
+				    selectionRect.getWidth(),selectionRect.getHeight());
+
+			    selectSnapParameters.setViewport(initialDraggedRect);
+			    selectSnapParameters.setFill(Color.TRANSPARENT);
+			    somethingSelected.set(true);
+			    preMoveImg = canvas.snapshot(sp, null);
+			    selectionImg = canvas.snapshot(selectSnapParameters, null);
+			}
+			break;
+		    case "move":
+			dragging = false;
+			//preMoveImg = canvas.snapshot(sp, null);
+			initialDraggedRect = new Rectangle2D(
 				selectionRect.getX()    ,selectionRect.getY(),
 				selectionRect.getWidth(),selectionRect.getHeight());
-			selectSnapParameters.setViewport(initialRect);
-			selectSnapParameters.setFill(Color.TRANSPARENT);
-			somethingSelected = true;
-			preMoveImg = canvas.snapshot(sp, null);
-			selectionImg = canvas.snapshot(selectSnapParameters, null);
+			
 			break;
 		}
 		
