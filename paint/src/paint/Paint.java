@@ -4,6 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Stack;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.application.Platform;
@@ -67,6 +71,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import javafx.util.Pair;
 import javafx.util.converter.NumberStringConverter;
 import javax.imageio.ImageIO;
@@ -103,6 +108,9 @@ public class Paint extends Application {
     private double lineWidthMin = .5;
     private double lineWidthMax = 100;
     private double lineWidthStartVal = 5;
+    
+    private double maxOffset = 400;
+    
     //initing tool selected with pencil as default
     
     //creating a line off canvas for preview
@@ -131,6 +139,11 @@ public class Paint extends Application {
     private double[] xPoints = new double[50];
     private double[] yPoints = new double[50];
     private int pointsCounter = 0; 
+    
+    private Rectangle selectionRect = new Rectangle();
+    private WritableImage selectionImg;
+    private WritableImage preMoveImg;
+    private Rectangle2D initialRect;
     
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
@@ -465,14 +478,15 @@ public class Paint extends Application {
 	
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/pencil.png","pencil")   , 0, 0);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/line.png","line")       , 1, 0);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 1);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/eraser.png","eraser"),    1, 1);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 0, 2);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    1, 2);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 3);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/polygon.png","polygon"),  1, 3);
-	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),0, 4);
-	
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/select.png","select")   , 0, 1);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/move.png","move")       , 1, 1);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/dropper.png","dropper") , 0, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/eraser.png","eraser"),    1, 2);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/square.png","rectangle"), 0, 3);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/circle.png","circle"),    1, 3);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 4);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/polygon.png","polygon"),  1, 4);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),0, 5);
 	
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -707,7 +721,38 @@ public class Paint extends Application {
 	line.setVisible(false);
 	rect.setFill(null);
 	triangle.setVisible(false);
-
+	
+	selectionRect.setVisible(false);
+	
+	selectionRect.setFill(null);
+	selectionRect.setStroke(Color.BLACK);
+	selectionRect.setWidth(20);
+	selectionRect.setStrokeDashOffset(25);
+	selectionRect.getStrokeDashArray().setAll(25d, 20d, 5d, 20d);
+	
+	Timeline timeline = new Timeline(
+                new KeyFrame(
+                        Duration.ZERO, 
+                        new KeyValue(
+                                selectionRect.strokeDashOffsetProperty(), 
+                                0, 
+                                Interpolator.LINEAR
+                        )
+                ),
+                new KeyFrame(
+                        Duration.seconds(2), 
+                        new KeyValue(
+                                selectionRect.strokeDashOffsetProperty(), 
+                                maxOffset, 
+                                Interpolator.LINEAR
+                        )
+                )
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
+	
+	
+	
 	canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, 
 		new EventHandler<MouseEvent>(){
 	    @Override
@@ -906,6 +951,19 @@ public class Paint extends Application {
 			);
 			
 			break;
+		    case "select":
+			selectionRect.setVisible(true);
+			selectionRect.setX(initialX);
+			selectionRect.setY(initialY);
+			double width = event.getX() - initialX;
+			double height = event.getY() - initialY;
+			selectionRect.setWidth(width);
+			selectionRect.setHeight(height);
+			break;
+			
+		    case "move":
+			
+			break;
 		}
 		
 		prevX = event.getX();
@@ -1018,6 +1076,20 @@ public class Paint extends Application {
 			gc.strokePolygon(xPoints,yPoints,3);
 			rect.setVisible(false);
 			break;
+		    case "select":
+			SnapshotParameters selectSnapParameters = new SnapshotParameters();
+			
+			initialRect = new Rectangle2D(
+				selectionRect.getX()    ,selectionRect.getY(),
+				selectionRect.getWidth(),selectionRect.getHeight());
+			selectSnapParameters.setViewport(initialRect);
+			
+			
+			canvas.snapshot(sp, preMoveImg);
+			
+			
+			canvas.snapshot(selectSnapParameters, selectionImg);
+			break;
 		}
 		
 	    }
@@ -1038,7 +1110,7 @@ public class Paint extends Application {
 	
 	
 	Group canvasGroup = new Group(canvas);
-	drawingElementsGroup = new Group(line,rect,oval,triangle);
+	drawingElementsGroup = new Group(line,rect,oval,triangle,selectionRect);
 	
 	
 	
