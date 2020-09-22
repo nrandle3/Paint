@@ -57,6 +57,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
@@ -112,7 +113,7 @@ public class Paint extends Application {
     private double lineWidthStartVal = 5;
     
     private double maxOffset = 400;
-    
+    private Label toolNameLabel = new Label();
     //initing tool selected with pencil as default
     
     //creating a line off canvas for preview
@@ -136,7 +137,7 @@ public class Paint extends Application {
     private double defaultPolygonSize = 3;
     
     private double btnSize = 25;
-    private StringProperty toolStringProperty = new SimpleStringProperty();
+    private StringProperty toolStringProperty = new SimpleStringProperty("Tool");
     
     private BooleanProperty somethingSelected = new SimpleBooleanProperty();
     
@@ -494,6 +495,12 @@ public class Paint extends Application {
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/text.png","text"),        0, 4);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/polygon.png","polygon"),  1, 4);
 	toolSelectionGrid.add(createBtnImage(btnSize,"assets/triangle.png","triangle"),0, 5);
+	toolSelectionGrid.add(createBtnImage(btnSize,"assets/none.png","No Tool"),0, 6);
+	
+	
+	VBox toolVBox  = new VBox();
+	toolNameLabel.setTextFill(Color.ANTIQUEWHITE);
+	toolVBox.getChildren().addAll(toolNameLabel,toolSelectionGrid);
 	
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
@@ -561,7 +568,10 @@ public class Paint extends Application {
 		Text lineWLabel;
 		Text ColorLabel;
 		Text numberPoints;
-		System.out.println(newValue);
+		
+		toolNameLabel.setText(newValue.substring(0, 1).toUpperCase() + newValue.substring(1));
+		
+		
 		if (!("move".equals(newValue)) && !newValue.equals("select")){
 		    somethingSelected.set(false);
 		}
@@ -1207,7 +1217,7 @@ public class Paint extends Application {
 	mainBPane.setTop(vbox);
         mainBPane.setCenter(stackPaneCenterer);
 	
-	mainBPane.setLeft(toolSelectionGrid);
+	mainBPane.setLeft(toolVBox);
 	
 	//Styling
         group.setStyle("-fx-background-color: #00FFFF;");

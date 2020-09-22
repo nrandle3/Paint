@@ -4,6 +4,35 @@ Links:
 	* Youtube Playlist: https://www.youtube.com/playlist?list=PLothci2voUsZCxINW4OC54PYzrJ-V_F0X
 	* Github: https://github.com/nrandle3/Paint
 
+
+-Version 4.0.0 -  2020-09-21
+
+New features:
+
+	* Text Tool added
+	* Made scrolling more concistent + image is now properly centered
+	* Triangle Tool added
+	* polygon Tool added
+	* Eraser Tool added
+	* Redo functionallity added
+	* Tool Displayed at the top of Tool selection Grid
+	* Select and Move Tools added
+	
+
+Known issues:
+
+	* Eraser erases weird when moving mouse quickly
+
+Expected next sprint:
+	* Copy and Paste Potentially
+
+
+Demo: https://youtu.be/uDCT_9p7D8E
+
+
+
+
+________________________________________________________________________________________________________
 -Version 3.0.0 -  2020-09-11
 
 New features:
