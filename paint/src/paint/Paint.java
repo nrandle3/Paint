@@ -250,13 +250,10 @@ public class Paint extends Application {
     
     public void openHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
-
 	file = fileChooser.showOpenDialog(stage);
 	imageSetup(file);
 	
-
 	Bounds canvasBounds = canvas.getBoundsInParent();
-
 	clip = new Rectangle(canvasBounds.getWidth(), canvasBounds.getHeight());
 
 	clip.setLayoutX(group.getLayoutX());
@@ -278,7 +275,6 @@ public class Paint extends Application {
     }
     public void saveAsHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
-
 	file = fileChooser.showSaveDialog(stage);
 	
 	if (file != null) {
