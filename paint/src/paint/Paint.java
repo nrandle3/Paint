@@ -2,7 +2,6 @@ package paint;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.Stack;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
@@ -10,7 +9,6 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -24,7 +22,6 @@ import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
@@ -32,32 +29,20 @@ import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar.ButtonData;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ColorPicker;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
@@ -74,8 +59,8 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
-import javafx.util.Pair;
 import javafx.util.converter.NumberStringConverter;
 import javax.imageio.ImageIO;
 
@@ -88,6 +73,9 @@ public class Paint extends Application {
     private Image image;
     private BorderPane mainBPane;
     private GridPane toolSelectionGrid;
+    FileChooser fileChooser = filePickerSetup("Open Image File");
+
+    
     //1,1 is dummy var
     private Canvas canvas = new Canvas(1,1);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -168,6 +156,9 @@ public class Paint extends Application {
 	    
 	    
 	    WritableImage undid = undoStack.pop();
+	    canvas.setWidth(undid.getWidth());
+	    canvas.setHeight(undid.getHeight());
+	    
 	    gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 	    gc.drawImage(undid,0,0);
 	    redoStack.add(undid);
@@ -255,228 +246,95 @@ public class Paint extends Application {
 	
     }
     
+    //-----------Event Handlers
+    
+    public void openHandle(ActionEvent t) {
+	Window stage = scene.getWindow();
+
+	file = fileChooser.showOpenDialog(stage);
+	imageSetup(file);
+	
+
+	Bounds canvasBounds = canvas.getBoundsInParent();
+
+	clip = new Rectangle(canvasBounds.getWidth(), canvasBounds.getHeight());
+
+	clip.setLayoutX(group.getLayoutX());
+	clip.setLayoutY(group.getLayoutY());
+
+	drawingElementsGroup.setClip(clip);
+    }
+    
+    public void saveHandle(ActionEvent t) {
+	if (file != null) {
+	    try {
+		WritableImage im = canvas.snapshot(sp, null);
+		ImageIO.write(SwingFXUtils.fromFXImage(im,
+		    null), "png", file);
+	    } catch (IOException ex) {
+		System.out.println(ex.getMessage());
+	    }
+	}
+    }
+    public void saveAsHandle(ActionEvent t) {
+	Window stage = scene.getWindow();
+
+	file = fileChooser.showSaveDialog(stage);
+	
+	if (file != null) {
+	    try {
+		WritableImage im = canvas.snapshot(sp, null);
+		ImageIO.write(SwingFXUtils.fromFXImage(im,
+		    null), "png", file);
+	    } catch (IOException ex) {
+		System.out.println(ex.getMessage());
+	    }
+	}
+    }
+    
+    public void zoomInHandle(ActionEvent t) {
+	zoomScale++;
+	zoomScale = Math.max(1, zoomScale);
+	stackPane.setScaleX(zoomScale/zoomStartVal);
+	stackPane.setScaleY(zoomScale/zoomStartVal);
+	scrollPane.setHvalue(middle);
+	scrollPane.setVvalue(middle);
+    }
+    
+    public void zoomOutHandle(ActionEvent t) {
+	zoomScale--;
+	zoomScale = Math.max(1, zoomScale);
+
+	stackPane.setScaleX(zoomScale/zoomStartVal);
+	stackPane.setScaleY(zoomScale/zoomStartVal);
+
+	scrollPane.setHvalue(middle);
+	scrollPane.setVvalue(middle);
+    }
+    
+    
     
     @Override
-    @SuppressWarnings("Convert2Lambda")
     public void start(Stage stage) throws Exception {
         //main device for centering stuff
         mainBPane = new BorderPane();
 	//coondensed all the fileChooser stuff into this func
-        FileChooser fileChooser = filePickerSetup("Open Image File");
 	file = fileChooser.showOpenDialog(stage);
 	sp.setFill(Color.TRANSPARENT);
         //Creating an image 
-        MenuBar menuBar = new MenuBar();
-        // --- Menu File
-        Menu menuFile = new Menu("_File");
-	//--------setting up all the subItems for File
-	//Open
-	MenuItem open = new MenuItem("Open");
-	open.setOnAction(new EventHandler<ActionEvent>() {
-	    @Override
-	    public void handle(ActionEvent t) {
-		file = fileChooser.showOpenDialog(stage);
-		imageSetup(file);
-		stage.setTitle(file.toURI().toString());
-		
-		Bounds canvasBounds = canvas.getBoundsInParent();
+        FileBar fileBar = new FileBar();
 	
-		clip = new Rectangle(canvasBounds.getWidth(), canvasBounds.getHeight());
-
-		clip.setLayoutX(group.getLayoutX());
-		clip.setLayoutY(group.getLayoutY());
-
-		drawingElementsGroup.setClip(clip);
-		
-	    }
-	    
+	fileBar.open.setOnAction(e -> {openHandle(e);});
+	fileBar.save.setOnAction(e -> {saveHandle(e);});
+	fileBar.saveAs.setOnAction(e -> {saveAsHandle(e);});
+	fileBar.undo.setOnAction(e -> {undo();});
+	fileBar.redo.setOnAction(e -> {redo();});
+	//resize
+	fileBar.canvasHeight.addListener((observable, oldValue, newValue) -> {
+            resize(fileBar.canvasWidth.get(),fileBar.canvasHeight.get());
 	});
-	open.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN));
-	//save
-	MenuItem save = new MenuItem("Save");
-	save.setOnAction(new EventHandler<ActionEvent>() {
-	    @Override
-	    public void handle(ActionEvent t) {
-		if (file != null) {
-		    try {
-			WritableImage im = canvas.snapshot(sp, null);
-			ImageIO.write(SwingFXUtils.fromFXImage(im,
-			    null), "png", file);
-		    } catch (IOException ex) {
-			System.out.println(ex.getMessage());
-		    }
-		}
-	    }
-	});
-	save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
-	
-	//saveas
-	MenuItem saveas = new MenuItem("Save as");
-	saveas.setOnAction(new EventHandler<ActionEvent>() {
-	    @Override
-	    public void handle(ActionEvent t) {
-		FileChooser fileChooser = filePickerSetup("Save Image File");
-		file = fileChooser.showSaveDialog(stage);
-		if (file != null) {
-		    try {
-			WritableImage im = canvas.snapshot(sp, null);
-			ImageIO.write(SwingFXUtils.fromFXImage(im,
-			    null), "png", file);
-		    } catch (IOException ex) {
-			System.out.println(ex.getMessage());
-		    }
-		}
-	    }
-	});
-	saveas.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN,KeyCombination.SHIFT_DOWN));
-	
-        
-	//undo
-	MenuItem undo = new MenuItem("undo");
-	undo.setOnAction(new EventHandler<ActionEvent>() { 
-        public void handle(ActionEvent t) {
-            undo();
-            }
-        
-        });
-        undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
-	
-	MenuItem redo = new MenuItem("redo");
-	redo.setOnAction(new EventHandler<ActionEvent>() { 
-        public void handle(ActionEvent t) {
-            redo();
-            }
-        
-        });
-        redo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
-	
-	
-        
-	//Exit
-	MenuItem exit = new MenuItem("Exit");
-	exit.setOnAction(new EventHandler<ActionEvent>() {
-	    public void handle(ActionEvent t) {
-		System.exit(0);
-	    }
-	});
-	exit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
-	
-	menuFile.getItems().addAll(open,save,saveas,undo,redo,exit);
-	
-	
-	
-        // --- Menu Edit
-        Menu menuEdit = new Menu("_Edit");
-	MenuItem resize = new MenuItem("Resize canvas");
-	
-	resize.setOnAction(new EventHandler<ActionEvent>() {
-	    public void handle(ActionEvent t) {
-		Dialog<Pair<String, String>> dialog = new Dialog<>();
-		dialog.setTitle("TestName");
-
-		// Set the button types.
-		ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
-		dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
-
-                GridPane gridPane = new GridPane();
-		gridPane.setHgap(10);
-		gridPane.setVgap(10);
-		gridPane.setPadding(new Insets(20, 150, 10, 10));
-
-		TextField from = new TextField();
-		from.setPromptText("From");
-		TextField to = new TextField();
-		to.setPromptText("To");
-
-		gridPane.add(from, 0, 0);
-		gridPane.add(new Label("To:"), 1, 0);
-		gridPane.add(to, 2, 0);
-
-		dialog.getDialogPane().setContent(gridPane);
-
-		// Request focus on the username field by default.
-		Platform.runLater(() -> from.requestFocus());
-
-		// Convert the result to a username-password-pair when the login button is clicked.
-		dialog.setResultConverter(dialogButton -> {
-		    if (dialogButton == loginButtonType) {
-			return new Pair<>(from.getText(), to.getText());
-		    }
-		    return null;
-		});
-
-		Optional<Pair<String, String>> result = dialog.showAndWait();
-
-		result.ifPresent(pair -> {
-		    System.out.println("From=" + pair.getKey() + ", To=" + pair.getValue());
-                    resize(Double.parseDouble(pair.getKey()),Double.parseDouble(pair.getValue()));
-		});
-	    }
-	});
-        resize.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN));
-	
-	menuEdit.getItems().add(resize);
-	
-	
-        // --- Menu View
-        Menu menuView = new Menu("_View");
-	MenuItem zoomIn = new MenuItem("Zoom In");
-        zoomIn.setOnAction(new EventHandler<ActionEvent>() {
-	    public void handle(ActionEvent t) {
-                zoomScale++;
-                zoomScale = Math.max(1, zoomScale);
-                stackPane.setScaleX(zoomScale/zoomStartVal);
-                stackPane.setScaleY(zoomScale/zoomStartVal);
-		scrollPane.setHvalue(middle);
-		scrollPane.setVvalue(middle);
-            }
-        });
-        zoomIn.setAccelerator(new KeyCodeCombination(KeyCode.EQUALS, KeyCombination.CONTROL_DOWN));
-        
-        MenuItem zoomOut = new MenuItem("Zoom Out");
-        zoomOut.setOnAction(new EventHandler<ActionEvent>() {
-	    public void handle(ActionEvent t) {
-                zoomScale--;
-                zoomScale = Math.max(1, zoomScale);
-                
-                stackPane.setScaleX(zoomScale/zoomStartVal);
-                stackPane.setScaleY(zoomScale/zoomStartVal);
-		
-		scrollPane.setHvalue(middle);
-		scrollPane.setVvalue(middle);
-            }
-        });
-        zoomOut.setAccelerator(new KeyCodeCombination(KeyCode.MINUS, KeyCombination.CONTROL_DOWN));
-        
-	menuView.getItems().addAll(zoomIn,zoomOut);
-	
-	// --- Menu Help
-        Menu menuHelp = new Menu("_Help");
-	MenuItem help = new MenuItem("Help");
-	menuHelp.getItems().add(help);
-	help.setOnAction(new EventHandler<ActionEvent>() {
-	    public void handle(ActionEvent t) {
-		TextArea textArea = new TextArea("Nathan Randle Paint v2\n"
-			+ "This is a paint Program, designed to draw things to the screen.\n"
-			+ "The program can display a choosen image and you can draw on the image.\n"
-			+ "If you would like to keep track of changes made to the project, please go to either:\n\n"
-			+ "Github: https://github.com/nrandle3/Paint \n\n"
-			+ "Youtube Release Playlist: https://www.youtube.com/playlist?list=PLothci2voUsZCxINW4OC54PYzrJ-V_F0X\n");
-		textArea.setEditable(false);
-		textArea.setWrapText(true);
-		GridPane gridPane = new GridPane();
-		gridPane.setMaxWidth(Double.MAX_VALUE);
-		gridPane.add(textArea, 0, 0);
-
-		Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setTitle("Help Window");
-		alert.getDialogPane().setContent(gridPane);
-		alert.showAndWait();
-	    }
-	});
-	
-        menuBar.getMenus().addAll(menuFile, menuEdit, menuView,menuHelp);
-	
+	fileBar.zoomIn.setOnAction(e -> {zoomInHandle(e);});
+	fileBar.zoomOut.setOnAction(e -> {zoomOutHandle(e);});
 	
 	//-----Setting Up tools-----
 	
@@ -728,7 +586,7 @@ public class Paint extends Application {
         });
 	
 	//adding all top menu elements
-	vbox.getChildren().addAll(menuBar,toolSettingsGrid);
+	vbox.getChildren().addAll(fileBar.menuBar,toolSettingsGrid);
         
         
 	//Drawing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -736,7 +594,7 @@ public class Paint extends Application {
 	somethingSelected.addListener((observable, oldValue, newValue) -> {
                 selectionRect.setVisible(newValue);
 		
-            });
+	});
 	
 	
         
@@ -1286,7 +1144,7 @@ public class Paint extends Application {
         stage.setMaximized(true);
 	
         //Setting title to the Stage to be the filename
-        stage.setTitle(file.toURI().toString());
+        stage.setTitle("Pain(t)");
         stage.setScene(scene);
 	
         //Displaying the contents of the stage 
