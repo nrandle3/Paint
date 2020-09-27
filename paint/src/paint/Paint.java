@@ -63,8 +63,15 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.converter.NumberStringConverter;
 import javax.imageio.ImageIO;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import org.junit.jupiter.api.Test;
 
-
+/**
+ *
+ * @author nrand
+ */
 public class Paint extends Application {
     
     //Setting up Vars
@@ -144,12 +151,20 @@ public class Paint extends Application {
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
     
+    /**
+     * Clears the redo Stack, then saves the current graphics context (gc) to a stack undoStack.
+     */
     public void save(){
 	redoStack.clear();
         WritableImage img = canvas.snapshot(sp,null);
 	
         undoStack.add(img);
     }
+
+    /**
+     * If there is something to undo, add current canvas to redo stack, clears the screen
+     * and draws the last item in the undo stack to the screen
+     */
     public void undo(){
 	if (redoStack.isEmpty()) redoStack.add(canvas.snapshot(sp,null));
         if (!undoStack.isEmpty()){
@@ -165,6 +180,11 @@ public class Paint extends Application {
 	    
         }
     }
+
+    /**
+     * If there is something to redo, add current canvas to undo stack, clears the screen
+     * and draws the last item in the redo stack to the screen
+     */
     public void redo(){
         if (!redoStack.isEmpty()){
 	    WritableImage redid = redoStack.pop();
@@ -174,6 +194,12 @@ public class Paint extends Application {
         }
     }
     
+    /**
+     * Resizes the canvas to x and y by clearing the screen, changing the width 
+     * height, and drawing the saved canvas to the now resized screen
+     * @param x
+     * @param y
+     */
     public void resize(double x, double y){
         save();
         canvas.setWidth(x);
@@ -185,8 +211,11 @@ public class Paint extends Application {
         gc.drawImage(imgview.snapshot(sp,null),0,0);
     }
     
-    
-    
+    /**
+     *
+     * @param region
+     * @param arc
+     */
     public static void clipChildren(Region region, double arc) {
 
         final Rectangle outputClip = new Rectangle();
@@ -200,11 +229,24 @@ public class Paint extends Application {
         });        
     }
     
-    
+    /**
+     *
+     * @param val
+     * @param min
+     * @param max
+     * @return
+     */
     public static double clamp(double val, double min, double max) {
 	return Math.max(min, Math.min(max, val));
     }
     
+    /**
+     *
+     * @param btnSize
+     * @param imgPath
+     * @param toolName
+     * @return
+     */
     public Button createBtnImage(double btnSize, String imgPath, String toolName){
 	//setting up line button
 	Image img = new Image(imgPath);
@@ -228,6 +270,12 @@ public class Paint extends Application {
     }
     
     //File chooser stuff condensed
+
+    /**
+     *
+     * @param s
+     * @return
+     */
     public FileChooser filePickerSetup(String s){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(s);
@@ -247,10 +295,16 @@ public class Paint extends Application {
     }
     
     //-----------Event Handlers
+
+    /**
+     *
+     * @param t
+     */
     
     public void openHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
 	file = fileChooser.showOpenDialog(stage);
+	gc.clearRect(0,0, canvas.getWidth(),canvas.getHeight());
 	imageSetup(file);
 	
 	Bounds canvasBounds = canvas.getBoundsInParent();
@@ -262,6 +316,10 @@ public class Paint extends Application {
 	drawingElementsGroup.setClip(clip);
     }
     
+    /**
+     *
+     * @param t
+     */
     public void saveHandle(ActionEvent t) {
 	if (file != null) {
 	    try {
@@ -273,6 +331,11 @@ public class Paint extends Application {
 	    }
 	}
     }
+
+    /**
+     *
+     * @param t
+     */
     public void saveAsHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
 	file = fileChooser.showSaveDialog(stage);
@@ -288,6 +351,10 @@ public class Paint extends Application {
 	}
     }
     
+    /**
+     *
+     * @param t
+     */
     public void zoomInHandle(ActionEvent t) {
 	zoomScale++;
 	zoomScale = Math.max(1, zoomScale);
@@ -297,6 +364,10 @@ public class Paint extends Application {
 	scrollPane.setVvalue(middle);
     }
     
+    /**
+     *
+     * @param t
+     */
     public void zoomOutHandle(ActionEvent t) {
 	zoomScale--;
 	zoomScale = Math.max(1, zoomScale);
@@ -1148,8 +1219,25 @@ public class Paint extends Application {
         stage.show(); 
     }
 
+    /**
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         launch(args);
+    }
+    
+    @Test
+    void zoomTest() {
+        assertEquals(0, zoomScale);
+    }
+    @Test
+    void draggingMouseTest() {
+        assertEquals(false, dragging);
+    }
+    @Test
+    void zoomCheck() {
+        assertEquals(25, btnSize);
     }
     
 }
