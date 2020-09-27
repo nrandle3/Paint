@@ -212,25 +212,7 @@ public class Paint extends Application {
     }
     
     /**
-     *
-     * @param region
-     * @param arc
-     */
-    public static void clipChildren(Region region, double arc) {
-
-        final Rectangle outputClip = new Rectangle();
-        outputClip.setArcWidth(arc);
-        outputClip.setArcHeight(arc);
-        region.setClip(outputClip);
-
-        region.layoutBoundsProperty().addListener((ov, oldValue, newValue) -> {
-            outputClip.setWidth(newValue.getWidth());
-            outputClip.setHeight(newValue.getHeight());
-        });        
-    }
-    
-    /**
-     *
+     * Returns a clamped val to min and max
      * @param val
      * @param min
      * @param max
@@ -241,7 +223,8 @@ public class Paint extends Application {
     }
     
     /**
-     *
+     * creates a button object with size btnsize, an image with path imgPath, and
+     * on click it changes the value of toolStringProperty to the toolName of the button
      * @param btnSize
      * @param imgPath
      * @param toolName
@@ -272,12 +255,12 @@ public class Paint extends Application {
     //File chooser stuff condensed
 
     /**
-     *
+     * creates and sets up the filechooser  for images
      * @param s
      * @return
      */
     public FileChooser filePickerSetup(String s){
-        FileChooser fileChooser = new FileChooser();
+        fileChooser = new FileChooser();
         fileChooser.setTitle(s);
         FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("Image files", "*.png","*.jpg","*.gif");
         fileChooser.getExtensionFilters().add(extFilter1);
@@ -285,6 +268,7 @@ public class Paint extends Application {
         fileChooser.getExtensionFilters().add(extFilter2);
         return fileChooser;
     }
+    
     
     private void imageSetup(File file){
 	image = new Image(file.toURI().toString());
@@ -297,11 +281,11 @@ public class Paint extends Application {
     //-----------Event Handlers
 
     /**
-     *
+     * 
      * @param t
      */
     
-    public void openHandle(ActionEvent t) {
+    private void openHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
 	file = fileChooser.showOpenDialog(stage);
 	gc.clearRect(0,0, canvas.getWidth(),canvas.getHeight());
@@ -320,7 +304,7 @@ public class Paint extends Application {
      *
      * @param t
      */
-    public void saveHandle(ActionEvent t) {
+    private void saveHandle(ActionEvent t) {
 	if (file != null) {
 	    try {
 		WritableImage im = canvas.snapshot(sp, null);
@@ -336,7 +320,7 @@ public class Paint extends Application {
      *
      * @param t
      */
-    public void saveAsHandle(ActionEvent t) {
+    private void saveAsHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
 	file = fileChooser.showSaveDialog(stage);
 	
@@ -355,7 +339,7 @@ public class Paint extends Application {
      *
      * @param t
      */
-    public void zoomInHandle(ActionEvent t) {
+    private void zoomInHandle(ActionEvent t) {
 	zoomScale++;
 	zoomScale = Math.max(1, zoomScale);
 	stackPane.setScaleX(zoomScale/zoomStartVal);
@@ -368,7 +352,7 @@ public class Paint extends Application {
      *
      * @param t
      */
-    public void zoomOutHandle(ActionEvent t) {
+    private void zoomOutHandle(ActionEvent t) {
 	zoomScale--;
 	zoomScale = Math.max(1, zoomScale);
 
