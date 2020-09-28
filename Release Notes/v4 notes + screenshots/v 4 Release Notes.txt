@@ -4,28 +4,7 @@ Links:
 	* Youtube Playlist: https://www.youtube.com/playlist?list=PLothci2voUsZCxINW4OC54PYzrJ-V_F0X
 	* Github: https://github.com/nrandle3/Paint
 
--Version 5.0.0 -  2020-09-27
 
-New features:
-
-	* Ensures file data security when saving file as different file type. 
-	* Javadoc added
-	* Testing added to ensure stability
-
-Known issues:
-
-	* Eraser erases weird when moving mouse quickly
-
-Expected next sprint:
-	* Copy and Paste Potentially
-
-
-Demo: https://youtu.be/XGq-dS-ySyQ
-
-
-
-
-________________________________________________________________________________________________________
 -Version 4.0.0 -  2020-09-21
 
 New features:

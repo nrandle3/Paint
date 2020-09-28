@@ -28,11 +28,23 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.GridPane;
 import javafx.util.Pair;
 
+/**
+ * Creates this fileBar that is just a custom/premade menubar
+ * @author nrand
+ */
 public class FileBar {
     
+    /**
+     * Keeps the current width of the canvas so resize can be called externally
+     */
     public DoubleProperty canvasWidth  = new SimpleDoubleProperty();
+
+    /**
+     *Keeps the current height of the canvas so resize can be called externally
+     */
     public DoubleProperty canvasHeight = new SimpleDoubleProperty();
-    public MenuBar menuBar = new MenuBar();
+
+    MenuBar menuBar = new MenuBar();
     
     Menu menuFile = new Menu("_File");
     MenuItem open = new MenuItem("Open");
@@ -52,6 +64,9 @@ public class FileBar {
     Menu menuHelp = new Menu("_Help");
     MenuItem help = new MenuItem("Help");
 	
+    /**
+     * Constructs the premade filebar
+     */
     public FileBar(){
 	
 	// --- Menu File

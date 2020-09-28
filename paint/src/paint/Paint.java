@@ -29,7 +29,10 @@ import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ColorPicker;
@@ -45,7 +48,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -64,8 +66,6 @@ import javafx.util.Duration;
 import javafx.util.converter.NumberStringConverter;
 import javax.imageio.ImageIO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -255,7 +255,7 @@ public class Paint extends Application {
     //File chooser stuff condensed
 
     /**
-     * creates and sets up the filechooser  for images
+     * creates and sets up the file chooser  for images
      * @param s
      * @return
      */
@@ -322,7 +322,35 @@ public class Paint extends Application {
      */
     private void saveAsHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
+	fileChooser.getExtensionFilters().clear();
+	FileChooser.ExtensionFilter pngFilter = new FileChooser.ExtensionFilter("png", "*.png");
+        fileChooser.getExtensionFilters().add(pngFilter);
+	FileChooser.ExtensionFilter jpgFilter = new FileChooser.ExtensionFilter("jpg", "*.jpg");
+        fileChooser.getExtensionFilters().add(jpgFilter);
+	FileChooser.ExtensionFilter gitFilter = new FileChooser.ExtensionFilter("gif", "*.gif");
+        fileChooser.getExtensionFilters().add(gitFilter);
+	
+	File oldFile = file;
 	file = fileChooser.showSaveDialog(stage);
+	boolean ignore = false;
+	String fileExtension = file.getName().substring(file.getName().length() - 3);
+	String oldFileExtension = oldFile.getName().substring(oldFile.getName().length() - 3);
+	System.out.println(fileExtension);
+	System.out.println(oldFileExtension);
+	while ((!fileExtension.equals(oldFileExtension)) && !ignore) {
+	    Alert alert = new Alert(AlertType.CONFIRMATION, "Changing the file type could delete data. Are you sure?", ButtonType.OK, ButtonType.CANCEL);
+	    alert.showAndWait();
+
+	    if (alert.getResult() == ButtonType.OK) {
+		ignore = true;
+	    } 
+	    if (alert.getResult() == ButtonType.CANCEL) {
+		file = fileChooser.showSaveDialog(stage);
+		fileExtension = file.getName().substring(file.getName().length() - 3);
+		oldFileExtension = oldFile.getName().substring(oldFile.getName().length() - 3);
+	    } 
+	    
+	}
 	
 	if (file != null) {
 	    try {
@@ -333,6 +361,7 @@ public class Paint extends Application {
 		System.out.println(ex.getMessage());
 	    }
 	}
+	filePickerSetup("Open An Image");
     }
     
     /**
