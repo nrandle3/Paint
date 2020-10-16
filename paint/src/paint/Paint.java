@@ -41,6 +41,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -151,6 +152,15 @@ public class Paint extends Application {
     private Stack<WritableImage> undoStack = new Stack<>();
     private Stack<WritableImage> redoStack = new Stack<>();
     
+    //the program will be have autodave disabled by default
+    private int autoSaveInterval = 0;
+    private int currentTimeLeft = 0;
+    private boolean autoSaveVisable = false;
+    private KeyFrame autosaveKF;
+    private Label autoSaveLabel = new Label();
+    private Timeline autosave;
+    
+    
     /**
      * Clears the redo Stack, then saves the current graphics context (gc) to a stack undoStack.
      */
@@ -179,6 +189,10 @@ public class Paint extends Application {
 	    redoStack.add(undid);
 	    
         }
+    }
+    
+    private void logSave(){
+        System.out.println("Saved");
     }
 
     /**
@@ -392,7 +406,36 @@ public class Paint extends Application {
 	scrollPane.setVvalue(middle);
     }
     
+    public static boolean isInteger(String s) {
+        try {
+            Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return false;
+        } catch (NullPointerException e) {
+            return false;
+        }
+        // only got here if we didn't return false
+        return true;
+    }
     
+    private void autoSaveHandle(){
+        TextInputDialog td = new TextInputDialog("Interval (In seconds)");
+        td.setTitle("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)");
+        td.showAndWait();
+        while (!isInteger(td.getResult())){
+            td.setTitle("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)"
+                    + "\n (please enter an integer)");
+            td.showAndWait();
+        }
+        autosaveKF = new KeyFrame(Duration.seconds(Integer.parseInt(td.getResult())), (ActionEvent event) -> {
+            logSave();
+            currentTimeLeft = Integer.parseInt(td.getResult());
+            
+        });
+        autosave = new Timeline(autosaveKF);
+        autosave.setCycleCount(Timeline.INDEFINITE);
+        autosave.play();
+    }
     
     @Override
     public void start(Stage stage) throws Exception {
@@ -400,7 +443,7 @@ public class Paint extends Application {
         mainBPane = new BorderPane();
 	//coondensed all the fileChooser stuff into this func
 	file = fileChooser.showOpenDialog(stage);
-	sp.setFill(Color.TRANSPARENT);
+	sp.setFill(Color.BLACK);
         //Creating an image 
         FileBar fileBar = new FileBar();
 	
@@ -415,6 +458,7 @@ public class Paint extends Application {
 	});
 	fileBar.zoomIn.setOnAction(e -> {zoomInHandle(e);});
 	fileBar.zoomOut.setOnAction(e -> {zoomOutHandle(e);});
+        fileBar.autoSave.setOnAction(e -> {autoSaveHandle();});
 	
 	//-----Setting Up tools-----
 	
@@ -438,19 +482,17 @@ public class Paint extends Application {
 	
 	VBox toolVBox  = new VBox();
 	toolNameLabel.setTextFill(Color.ANTIQUEWHITE);
-	toolVBox.getChildren().addAll(toolNameLabel,toolSelectionGrid);
+	toolVBox.getChildren().addAll(toolNameLabel,toolSelectionGrid,autoSaveLabel);
 	
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
 	gc.setLineWidth(lineWidthStartVal);
 	
-	lineWidthSlider.valueProperty().addListener(new ChangeListener<Number>() {
-            public void changed(ObservableValue<? extends Number> ov,
-                Number old_val, Number new_val) {
-		    gc.setLineWidth(new_val.doubleValue());
-		    line.setStrokeWidth(new_val.doubleValue());
-		    rect.setStrokeWidth(lineWidthSlider.getValue());
-            }
+	lineWidthSlider.valueProperty().addListener((
+                ObservableValue<? extends Number> ov, Number old_val, Number new_val) -> {
+            gc.setLineWidth(new_val.doubleValue());
+            line.setStrokeWidth(new_val.doubleValue());
+            rect.setStrokeWidth(lineWidthSlider.getValue());
         });
 	
 	
@@ -823,7 +865,7 @@ public class Paint extends Application {
 			somethingSelected.set(false);
 			dragging = false;
 			break;
-			
+                    
 		}
 	    }
 	});
@@ -1103,7 +1145,21 @@ public class Paint extends Application {
 	    }
 	});
 	
-	
+	//autosave +logging timer
+        KeyFrame autosaveLabelKF = new KeyFrame(Duration.seconds(1), (ActionEvent event) -> {
+            if ((autoSaveVisable) || (autoSaveInterval < 1)){
+                currentTimeLeft--;
+                autoSaveLabel.setText(Integer.toString(currentTimeLeft));
+            }
+            
+        });
+        Timeline autosaveLabelTimeLine = new Timeline(autosaveLabelKF);
+        autosaveLabelTimeLine.setCycleCount(Timeline.INDEFINITE);
+        autosaveLabelTimeLine.play();
+        
+        
+        
+        
 	//creating a width and height for the default unmaximized window
         Rectangle2D screenBounds = Screen.getPrimary().getBounds();
         double width  = screenBounds.getWidth();

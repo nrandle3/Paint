@@ -15,6 +15,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -63,6 +64,8 @@ public class FileBar {
     
     Menu menuHelp = new Menu("_Help");
     MenuItem help = new MenuItem("Help");
+    CheckMenuItem timerVisable = new CheckMenuItem("Autosave Timer Visable");
+    MenuItem autoSave = new MenuItem("Set AutoSave Interval");
 	
     /**
      * Constructs the premade filebar
@@ -129,11 +132,7 @@ public class FileBar {
 		gridPane.add(to, 2, 0);
 
 		dialog.getDialogPane().setContent(gridPane);
-
-		// Request focus on the username field by default.
 		Platform.runLater(() -> from.requestFocus());
-
-		// Convert the result to a username-password-pair when the login button is clicked.
 		dialog.setResultConverter(dialogButton -> {
 		    if (dialogButton == loginButtonType) {
 			return new Pair<>(from.getText(), to.getText());
@@ -165,7 +164,7 @@ public class FileBar {
 
 	// --- Menu Help
 	
-	menuHelp.getItems().add(help);
+	menuHelp.getItems().addAll(help, timerVisable,autoSave);
 	help.setOnAction(new EventHandler<ActionEvent>() {
 	    public void handle(ActionEvent t) {
 		TextArea textArea = new TextArea("Nathan Randle Paint v2\n"
@@ -186,8 +185,8 @@ public class FileBar {
 		alert.showAndWait();
 	    }
 	});
-
-	menuBar.getMenus().addAll(menuFile, menuEdit, menuView,menuHelp);
+        
+	menuBar.getMenus().addAll(menuFile, menuEdit, menuView, menuHelp);
     }
     
     
