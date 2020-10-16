@@ -3,6 +3,10 @@ package paint;
 import java.io.File;
 import java.io.IOException;
 import java.util.Stack;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -47,6 +51,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
@@ -74,6 +79,10 @@ import org.junit.jupiter.api.Test;
  * @author nrand
  */
 public class Paint extends Application {
+    
+    //logging stuff
+    private final static Logger LOGGER = Logger.getLogger(Paint.class.getName());
+    FileHandler fh;
     
     //Setting up Vars
     private Scene scene;
@@ -157,8 +166,10 @@ public class Paint extends Application {
     private int currentTimeLeft = 0;
     private boolean autoSaveVisable = false;
     private KeyFrame autosaveKF;
+    private KeyFrame autosaveLabelKF;
     private Label autoSaveLabel = new Label();
     private Timeline autosave;
+    private Timeline autosaveLabelTimeLine;
     
     
     /**
@@ -189,10 +200,6 @@ public class Paint extends Application {
 	    redoStack.add(undid);
 	    
         }
-    }
-    
-    private void logSave(){
-        System.out.println("Saved");
     }
 
     /**
@@ -319,6 +326,7 @@ public class Paint extends Application {
      * @param t
      */
     private void saveHandle(ActionEvent t) {
+        LOGGER.info(file.toString() + " saved");
 	if (file != null) {
 	    try {
 		WritableImage im = canvas.snapshot(sp, null);
@@ -335,6 +343,7 @@ public class Paint extends Application {
      * @param t
      */
     private void saveAsHandle(ActionEvent t) {
+        LOGGER.info(file.toString() + " saved");
 	Window stage = scene.getWindow();
 	fileChooser.getExtensionFilters().clear();
 	FileChooser.ExtensionFilter pngFilter = new FileChooser.ExtensionFilter("png", "*.png");
@@ -372,7 +381,7 @@ public class Paint extends Application {
 		ImageIO.write(SwingFXUtils.fromFXImage(im,
 		    null), "png", file);
 	    } catch (IOException ex) {
-		System.out.println(ex.getMessage());
+                LOGGER.severe(ex.getMessage());
 	    }
 	}
 	filePickerSetup("Open An Image");
@@ -419,19 +428,33 @@ public class Paint extends Application {
     }
     
     private void autoSaveHandle(){
+        LOGGER.info("Changing autosave timer");
         TextInputDialog td = new TextInputDialog("Interval (In seconds)");
-        td.setTitle("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)");
+        td.setHeaderText("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)");
         td.showAndWait();
         while (!isInteger(td.getResult())){
-            td.setTitle("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)"
+            td.setHeaderText("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)"
                     + "\n (please enter an integer)");
             td.showAndWait();
         }
+        currentTimeLeft = Integer.parseInt(td.getResult());
         autosaveKF = new KeyFrame(Duration.seconds(Integer.parseInt(td.getResult())), (ActionEvent event) -> {
-            logSave();
+            LOGGER.info("Autosaved image");
             currentTimeLeft = Integer.parseInt(td.getResult());
             
         });
+        autosaveLabelKF = new KeyFrame(Duration.seconds(1), (ActionEvent event) -> {
+            if (!(autoSaveVisable) && (autoSaveInterval < 1) && (currentTimeLeft > 0)){
+                currentTimeLeft--;
+                autoSaveLabel.setText(Integer.toString(currentTimeLeft));
+            }
+            
+        });
+        autosaveLabelTimeLine = new Timeline(autosaveLabelKF);
+        autosaveLabelTimeLine.setCycleCount(Timeline.INDEFINITE);
+        autosaveLabelTimeLine.play();
+        
+        
         autosave = new Timeline(autosaveKF);
         autosave.setCycleCount(Timeline.INDEFINITE);
         autosave.play();
@@ -439,6 +462,12 @@ public class Paint extends Application {
     
     @Override
     public void start(Stage stage) throws Exception {
+        fh = new FileHandler("./test/paint.log",true);  
+        LOGGER.addHandler(fh);
+        SimpleFormatter formatter = new SimpleFormatter();  
+        fh.setFormatter(formatter);
+        LOGGER.setLevel(Level.INFO);
+        LOGGER.log(Level.INFO, "Starting application");
         //main device for centering stuff
         mainBPane = new BorderPane();
 	//coondensed all the fileChooser stuff into this func
@@ -482,8 +511,13 @@ public class Paint extends Application {
 	
 	VBox toolVBox  = new VBox();
 	toolNameLabel.setTextFill(Color.ANTIQUEWHITE);
-	toolVBox.getChildren().addAll(toolNameLabel,toolSelectionGrid,autoSaveLabel);
-	
+        autoSaveLabel.setTextFill(Color.ANTIQUEWHITE);
+        AnchorPane ap = new AnchorPane(toolVBox,autoSaveLabel);
+        
+        
+	toolVBox.getChildren().addAll(toolNameLabel,toolSelectionGrid);
+	AnchorPane.setTopAnchor(toolVBox,3.0);
+        AnchorPane.setBottomAnchor(autoSaveLabel, 3.0);
 	//slider
 	Slider lineWidthSlider = new Slider(lineWidthMin,lineWidthMax,lineWidthStartVal);
 	gc.setLineWidth(lineWidthStartVal);
@@ -1145,17 +1179,16 @@ public class Paint extends Application {
 	    }
 	});
 	
-	//autosave +logging timer
-        KeyFrame autosaveLabelKF = new KeyFrame(Duration.seconds(1), (ActionEvent event) -> {
-            if ((autoSaveVisable) || (autoSaveInterval < 1)){
-                currentTimeLeft--;
-                autoSaveLabel.setText(Integer.toString(currentTimeLeft));
-            }
+	//logging timer
+        KeyFrame loggingKF = new KeyFrame(Duration.seconds(60), (ActionEvent event) -> {
+            LOGGER.info("Current File: " + file.toString() + 
+                        "\nCurrent Tool: " + toolStringProperty.get());
             
         });
-        Timeline autosaveLabelTimeLine = new Timeline(autosaveLabelKF);
-        autosaveLabelTimeLine.setCycleCount(Timeline.INDEFINITE);
-        autosaveLabelTimeLine.play();
+        Timeline loggingTimeline = new Timeline(loggingKF);
+        loggingTimeline.setCycleCount(Timeline.INDEFINITE);
+        loggingTimeline.play();
+        
         
         
         
@@ -1211,7 +1244,7 @@ public class Paint extends Application {
 	mainBPane.setTop(vbox);
         mainBPane.setCenter(stackPaneCenterer);
 	
-	mainBPane.setLeft(toolVBox);
+	mainBPane.setLeft(ap);
 	
 	//Styling
         group.setStyle("-fx-background-color: #00FFFF;");
@@ -1307,6 +1340,11 @@ public class Paint extends Application {
     @Test
     void zoomCheck() {
         assertEquals(25, btnSize);
+    }
+    @Override
+    public void stop() {
+        LOGGER.info("Application Closed"
+                + "\n____________________________________________________\n\n");
     }
     
 }
