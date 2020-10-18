@@ -11,7 +11,7 @@
     <jar href="lib\junit-jupiter-api-5.6.0.jar" size="154033" download="eager" />
     <jar href="lib\junit-jupiter-engine-5.6.0.jar" size="209368" download="eager" />
     <jar href="lib\junit-jupiter-params-5.6.0.jar" size="562272" download="eager" />
-    <jar href="paint.jar" size="91699" download="eager" />
+    <jar href="paint.jar" size="91876" download="eager" />
   </resources>
   <jfx:javafx-desc  width="800" height="600" main-class="paint.Paint"  name="paint" />
   <update check="always"/>

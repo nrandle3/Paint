@@ -43,6 +43,8 @@ import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputDialog;
@@ -1242,7 +1244,9 @@ public class Paint extends Application {
 	scrollPane.setVvalue(middle);
 	
 	mainBPane.setTop(vbox);
-        mainBPane.setCenter(stackPaneCenterer);
+        Tab tab = new Tab(file.toString(),stackPaneCenterer);
+        TabPane tabs = new TabPane(tab);
+        mainBPane.setCenter(tabs);
 	
 	mainBPane.setLeft(ap);
 	
