@@ -48,8 +48,6 @@ public class PaintTest {
 	System.out.println("save");
 	Paint instance = new Paint();
 	instance.save();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
     }
 
     /**
@@ -60,8 +58,7 @@ public class PaintTest {
 	System.out.println("undo");
 	Paint instance = new Paint();
 	instance.undo();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -72,8 +69,7 @@ public class PaintTest {
 	System.out.println("redo");
 	Paint instance = new Paint();
 	instance.redo();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -86,8 +82,7 @@ public class PaintTest {
 	double y = 0.0;
 	Paint instance = new Paint();
 	instance.resize(x, y);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -102,8 +97,7 @@ public class PaintTest {
 	double expResult = 0.0;
 	double result = Paint.clamp(val, min, max);
 	assertEquals(expResult, result, 0.0);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -119,8 +113,7 @@ public class PaintTest {
 	Button expResult = null;
 	Button result = instance.createBtnImage(btnSize, imgPath, toolName);
 	assertEquals(expResult, result);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -134,8 +127,7 @@ public class PaintTest {
 	FileChooser expResult = null;
 	FileChooser result = instance.filePickerSetup(s);
 	assertEquals(expResult, result);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -147,8 +139,7 @@ public class PaintTest {
 	Stage stage = null;
 	Paint instance = new Paint();
 	instance.start(stage);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -159,8 +150,7 @@ public class PaintTest {
 	System.out.println("main");
 	String[] args = null;
 	Paint.main(args);
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -171,8 +161,7 @@ public class PaintTest {
 	System.out.println("zoomTest");
 	Paint instance = new Paint();
 	instance.zoomTest();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -183,8 +172,7 @@ public class PaintTest {
 	System.out.println("draggingMouseTest");
 	Paint instance = new Paint();
 	instance.draggingMouseTest();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
 
     /**
@@ -195,8 +183,7 @@ public class PaintTest {
 	System.out.println("zoomCheck");
 	Paint instance = new Paint();
 	instance.zoomCheck();
-	// TODO review the generated test code and remove the default call to fail.
-	fail("The test case is a prototype.");
+	
     }
     
 }

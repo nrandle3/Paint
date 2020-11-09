@@ -279,12 +279,12 @@ public class Paint extends Application {
 
     /**
      * creates and sets up the file chooser  for images
-     * @param s
+     * @param fileChooserTitle
      * @return
      */
-    public FileChooser filePickerSetup(String s){
+    public FileChooser filePickerSetup(String fileChooserTitle){
         fileChooser = new FileChooser();
-        fileChooser.setTitle(s);
+        fileChooser.setTitle(fileChooserTitle);
         FileChooser.ExtensionFilter extFilter1 = new FileChooser.ExtensionFilter("Image files", "*.png","*.jpg","*.gif");
         fileChooser.getExtensionFilters().add(extFilter1);
         FileChooser.ExtensionFilter extFilter2 = new FileChooser.ExtensionFilter("All files", "*");
@@ -293,7 +293,7 @@ public class Paint extends Application {
     }
     
     
-    private void imageSetup(File file){
+    public void imageSetup(File file){
 	image = new Image(file.toURI().toString());
 	canvas.setHeight(image.getHeight());
 	canvas.setWidth(image.getWidth());
@@ -304,11 +304,12 @@ public class Paint extends Application {
     //-----------Event Handlers
 
     /**
-     * 
+     * Event Handler for the open dialog. 
+     * Cannot be undone with undo()
      * @param t
      */
     
-    private void openHandle(ActionEvent t) {
+    public void openHandle(ActionEvent t) {
 	Window stage = scene.getWindow();
 	file = fileChooser.showOpenDialog(stage);
 	gc.clearRect(0,0, canvas.getWidth(),canvas.getHeight());
@@ -324,10 +325,10 @@ public class Paint extends Application {
     }
     
     /**
-     *
+     * Event Handler for saving the image without dialog. Logs the save.
      * @param t
      */
-    private void saveHandle(ActionEvent t) {
+    public void saveHandle(ActionEvent t) {
         LOGGER.info(file.toString() + " saved");
 	if (file != null) {
 	    try {
@@ -335,17 +336,19 @@ public class Paint extends Application {
 		ImageIO.write(SwingFXUtils.fromFXImage(im,
 		    null), "png", file);
 	    } catch (IOException ex) {
-		System.out.println(ex.getMessage());
+		LOGGER.severe(ex.getMessage());
 	    }
 	}
     }
 
     /**
-     *
+     * Event Handler for saving the image with dialog.
+     * Will warn user if saving as different file type.
+     * Logs the save.
      * @param t
      */
-    private void saveAsHandle(ActionEvent t) {
-        LOGGER.info(file.toString() + " saved");
+    public void saveAsHandle(ActionEvent t) {
+        LOGGER.log(Level.INFO, "{0} saved", file.toString());
 	Window stage = scene.getWindow();
 	fileChooser.getExtensionFilters().clear();
 	FileChooser.ExtensionFilter pngFilter = new FileChooser.ExtensionFilter("png", "*.png");
@@ -362,6 +365,7 @@ public class Paint extends Application {
 	String oldFileExtension = oldFile.getName().substring(oldFile.getName().length() - 3);
 	System.out.println(fileExtension);
 	System.out.println(oldFileExtension);
+	
 	while ((!fileExtension.equals(oldFileExtension)) && !ignore) {
 	    Alert alert = new Alert(AlertType.CONFIRMATION, "Changing the file type could delete data. Are you sure?", ButtonType.OK, ButtonType.CANCEL);
 	    alert.showAndWait();
@@ -390,10 +394,10 @@ public class Paint extends Application {
     }
     
     /**
-     *
+     * Modifies global zoomScale, sets scale of the stackpane zoomScale/zoomStartVal
      * @param t
      */
-    private void zoomInHandle(ActionEvent t) {
+    public void zoomInHandle(ActionEvent t) {
 	zoomScale++;
 	zoomScale = Math.max(1, zoomScale);
 	stackPane.setScaleX(zoomScale/zoomStartVal);
@@ -403,10 +407,10 @@ public class Paint extends Application {
     }
     
     /**
-     *
+     * Modifies global zoomScale, sets scale of the stackpane zoomScale/zoomStartVal
      * @param t
      */
-    private void zoomOutHandle(ActionEvent t) {
+    public void zoomOutHandle(ActionEvent t) {
 	zoomScale--;
 	zoomScale = Math.max(1, zoomScale);
 
@@ -417,6 +421,11 @@ public class Paint extends Application {
 	scrollPane.setVvalue(middle);
     }
     
+    /**
+     * Returns true if string s is an integer, false if not. 
+     * (This function exists because it does not return an error if s is null)
+     * @param s
+     */
     public static boolean isInteger(String s) {
         try {
             Integer.parseInt(s);
@@ -429,7 +438,11 @@ public class Paint extends Application {
         return true;
     }
     
-    private void autoSaveHandle(){
+    /**
+     * Handler for changing the autosave timer. 
+     * Incorrect entries reprompt user. 
+     */
+    public void autoSaveHandle(){
         LOGGER.info("Changing autosave timer");
         TextInputDialog td = new TextInputDialog("Interval (In seconds)");
         td.setHeaderText("Set the autosave interval in seconds. When set to 0 autosave will be disabled (this is also the default)");
