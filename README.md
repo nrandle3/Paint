@@ -1,5 +1,6 @@
 # Paint
  CS-250 Paint Project
+ Recreating Microsoft Paint from scratch in Java
  
 # links
 -------
